@@ -1,4 +1,4 @@
-# Southwest Skies
+# Prickly Panic
 
 A pixel-art desert flying game starring the cactus wren, Arizona's state bird. Fly over saguaros, cholla,
 agave, ocotillo, yucca and windmills from Tucson to Bisbee to Tombstone through spring, monsoon, fall and winter.
@@ -26,4 +26,4 @@ Then visit http://localhost:8137. Planned home: `swskies.abhimangupta.com`.
 - Scores and your player name are stored only in your own browser.
 - Font: Silkscreen by Jason Kottke (SIL Open Font License), loaded from Google Fonts.
 - Add `?debug` to the URL to expose test hooks on `window.__waa`.
-- The game was first called Wren in Arizona; browser storage keys keep the old `waa.` prefix so saved bests and names carry over.
+- The game was first called Wren in Arizona, then Southwest Skies; browser storage keys keep the old `waa.` prefix so saved bests and names carry over.

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#e8673a">
-<meta name="description" content="Southwest Skies: a pixel-art desert flight as a cactus wren, Arizona's state bird.">
-<title>Southwest Skies</title>
+<meta name="description" content="Prickly Panic: a pixel-art desert flight as a cactus wren, Arizona's state bird.">
+<title>Prickly Panic</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌵</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -140,13 +140,13 @@
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Southwest Skies game"></canvas>
+<canvas id="game" aria-label="Prickly Panic game"></canvas>
 <button id="mute" class="pix" aria-label="Toggle sound"><canvas id="muteIcon" width="11" height="9"></canvas></button>
 
 <div id="intro" class="overlay" hidden>
   <div class="card pix">
     <canvas class="intro-wren" id="introWren" width="144" height="105" aria-hidden="true"></canvas>
-    <h1>Southwest Skies</h1>
+    <h1>Prickly Panic</h1>
     <p class="intro-text">You're a <b>cactus wren</b>, Arizona’s state bird, foraging your way through Tucson, Bisbee and Tombstone.</p>
     <p class="hint intro-hint blink">Tap or press Space to continue</p>
   </div>
@@ -154,7 +154,7 @@
 
 <div id="title" class="overlay">
   <div class="card pix">
-    <h1>Southwest Skies</h1>
+    <h1>Prickly Panic</h1>
     <ul class="how">
       <li><canvas data-icon="wren" width="16" height="16"></canvas><span>Tap, click or press Space to flap</span></li>
       <li><canvas data-icon="cactus" width="16" height="16"></canvas><span>Fly over vegetation, avoid spines</span></li>
@@ -1960,10 +1960,10 @@
   $('again').addEventListener('click', () => { if (state === 'over' && performance.now() - overAt > 650) { audio(); toReady(); } });
   $('share').addEventListener('click', async () => {
     const s = stage();
-    const msg = `I scored ${score} and flew all the way to ${s.place} playing Southwest Skies by @abhimangupta 🌵🐦`;
+    const msg = `I scored ${score} and flew all the way to ${s.place} playing Prickly Panic by @abhimangupta 🌵🐦`;
     const url = location.href.split('#')[0];
     try {
-      if (navigator.share) { await navigator.share({ title: 'Southwest Skies', text: msg, url }); return; }
+      if (navigator.share) { await navigator.share({ title: 'Prickly Panic', text: msg, url }); return; }
       await navigator.clipboard.writeText(`${msg} ${url}`);
       $('share').textContent = 'Copied!';
     } catch { /* cancelled or blocked */ }
