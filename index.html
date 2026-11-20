@@ -123,6 +123,10 @@
   .hint { margin-top: 12px; font-size: 11px; color: var(--ink-soft); }
   .foot { margin-top: 10px; font-size: 10px; color: var(--ink-soft); opacity: 0.85; line-height: 1.4; }
   .credit { display: block; margin-top: 8px; }
+  .links { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 14px; margin-top: 5px; }
+  .links a { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-soft); text-decoration: none; font-size: 11px; padding: 2px 0; }
+  .links a:hover, .links a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .links canvas { width: 11px; height: 11px; image-rendering: pixelated; }
 
   /* first-visit intro */
   #intro .card { padding-top: 24px; }
@@ -161,7 +165,7 @@
     <label class="name-row">Nickname <input id="nameTitle" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
-    <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span></p>
+    <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
 </div>
 
@@ -184,7 +188,7 @@
       <button class="btn secondary" id="share">Share</button>
     </div>
     <p class="hint">or tap anywhere / Space</p>
-    <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span></p>
+    <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
 </div>
 
@@ -644,6 +648,33 @@
     cactus: () => paint(16, 16, (g) => { g.capV(8, 1, 15, 5, '#4b8b52'); g.rect(3, 7, 4, 3, '#4b8b52'); g.capV(4, 3, 9, 3, '#4b8b52'); g.rect(10, 9, 3, 3, '#4b8b52'); g.capV(12, 5, 11, 3, '#4b8b52'); g.rect(7, 2, 1, 12, '#6fae6a'); }),
     sun: () => paint(16, 16, (g) => { g.ell(8, 8, 4.5, 4.5, '#ffb347'); g.ell(7, 7, 2, 2, '#ffe08a'); for (const [x, y] of [[8, 1], [8, 14], [1, 8], [14, 8], [3, 3], [12, 3], [3, 12], [12, 12]]) g.set(x, y, '#ff7a2e'); }, { outline: null }),
     pear: () => PEAR_SPR, // the same fruit you grab in game
+    // tiny footer link glyphs, in the card's soft ink
+    web: () => bitmap([
+      '...kkkkk...',
+      '..k..k..k..',
+      '.k..k.k..k.',
+      'k..k...k..k',
+      'k..k...k..k',
+      'kkkkkkkkkkk',
+      'k..k...k..k',
+      'k..k...k..k',
+      '.k..k.k..k.',
+      '..k..k..k..',
+      '...kkkkk...',
+    ], { k: '#6d5340' }),
+    insta: () => bitmap([
+      '.kkkkkkkkk.',
+      'k.........k',
+      'k.......k.k',
+      'k...kkk...k',
+      'k..k...k..k',
+      'k..k...k..k',
+      'k..k...k..k',
+      'k...kkk...k',
+      'k.........k',
+      'k.........k',
+      '.kkkkkkkkk.',
+    ], { k: '#6d5340' }),
     // simplified 16px Cooper's hawk: dark cap, red eye, slate back and raised wing, rusty chest, long banded tail
     hawk: () => paint(16, 12, (g) => {
       const slate = '#5c6c7e', dark = '#2f3742', rust = '#c8693a';
@@ -1929,7 +1960,7 @@
   $('again').addEventListener('click', () => { if (state === 'over' && performance.now() - overAt > 650) { audio(); toReady(); } });
   $('share').addEventListener('click', async () => {
     const s = stage();
-    const msg = `I scored ${score} and flew all the way to ${s.place} playing Southwest Skies 🌵🐦`;
+    const msg = `I scored ${score} and flew all the way to ${s.place} playing Southwest Skies by @abhimangupta 🌵🐦`;
     const url = location.href.split('#')[0];
     try {
       if (navigator.share) { await navigator.share({ title: 'Southwest Skies', text: msg, url }); return; }
@@ -1942,6 +1973,7 @@
 
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') e.target.blur(); return; }
+    if (e.target.tagName === 'A' && (e.key === 'Enter' || e.code === 'Space')) return; // let a focused link open, not flap
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Enter') { e.preventDefault(); if (!e.repeat) press(); }
     else if (e.code === 'KeyM') setMute(!muted);
     else if ((e.code === 'KeyP' || e.code === 'Escape') && state === 'play') paused = !paused;
