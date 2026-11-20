@@ -7,13 +7,14 @@ Made by Abhiman Gupta. An independent, non-commercial game.
 
 ## Play
 
-It's a single static page with no build step. Open `index.html` through any local web server, for example:
+The game will be available at [pricklypanic.abhimangupta.com](https://pricklypanic.abhimangupta.com/).
+To play locally, serve the game directory from any static web server. There is no build step.
 
 ```bash
 python3 -m http.server 8137
 ```
 
-Then visit http://localhost:8137. Planned home: `swskies.abhimangupta.com`.
+Then visit [localhost:8137](http://localhost:8137/).
 
 ## Controls
 
