@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#e8673a">
-<meta name="description" content="Wren in Arizona: a pixel-art desert flight across Arizona.">
-<title>Wren in Arizona</title>
+<meta name="description" content="Southwest Skies: a pixel-art desert flight as a cactus wren, Arizona's state bird.">
+<title>Southwest Skies</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌵</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,7 +95,7 @@
       0 calc(var(--u) * -1) 0 0 var(--ink), 0 var(--u) 0 0 var(--ink),
       inset calc(var(--u) * -1) calc(var(--u) * -1) 0 0 #d9ccb6;
   }
-  .name-row { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--ink-soft); }
+  .name-row { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 14px; font-size: 14px; color: var(--ink-soft); }
   .name-row input {
     font: inherit; font-size: 14px; color: var(--ink);
     width: 140px; padding: 5px 8px; border: 0; background: #fff;
@@ -122,26 +122,46 @@
   .fact b { color: var(--cactus-dark); }
   .hint { margin-top: 12px; font-size: 11px; color: var(--ink-soft); }
   .foot { margin-top: 10px; font-size: 10px; color: var(--ink-soft); opacity: 0.85; line-height: 1.4; }
+  .credit { display: block; margin-top: 8px; }
+
+  /* first-visit intro */
+  #intro .card { padding-top: 24px; }
+  .intro-wren { display: block; margin: -12px auto 0; width: 144px; height: 105px; image-rendering: pixelated; }
+  .intro-hint { margin-top: 18px; font-size: 15px; font-weight: 700; color: var(--ink); }
+  .intro-text { margin-top: 14px; font-size: 14px; line-height: 1.5; color: var(--ink); }
+  .intro-text b { color: var(--accent); }
+  .blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .blink { animation: none; } }
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Wren in Arizona game"></canvas>
+<canvas id="game" aria-label="Southwest Skies game"></canvas>
 <button id="mute" class="pix" aria-label="Toggle sound"><canvas id="muteIcon" width="11" height="9"></canvas></button>
+
+<div id="intro" class="overlay" hidden>
+  <div class="card pix">
+    <canvas class="intro-wren" id="introWren" width="144" height="105" aria-hidden="true"></canvas>
+    <h1>Southwest Skies</h1>
+    <p class="intro-text">You're a <b>cactus wren</b>, Arizona’s state bird, foraging your way through Tucson, Bisbee and Tombstone.</p>
+    <p class="hint intro-hint blink">Tap or press Space to continue</p>
+  </div>
+</div>
 
 <div id="title" class="overlay">
   <div class="card pix">
-    <h1>Wren in Arizona</h1>
+    <h1>Southwest Skies</h1>
     <ul class="how">
       <li><canvas data-icon="wren" width="16" height="16"></canvas><span>Tap, click or press Space to flap</span></li>
       <li><canvas data-icon="cactus" width="16" height="16"></canvas><span>Fly over vegetation, avoid spines</span></li>
       <li><canvas data-icon="sun" width="16" height="16"></canvas><span>Don't fly too close to the sun</span></li>
-      <li><canvas data-icon="pear" width="16" height="16"></canvas><span>Grab prickly pear: 10s of invincibility</span></li>
+      <li><canvas data-icon="pear" width="16" height="16"></canvas><span>Eat prickly pear = 10s invincibility</span></li>
       <li><canvas data-icon="hawk" width="16" height="16"></canvas><span>Dodge the Cooper's hawk</span></li>
     </ul>
-    <label class="name-row">Playing as <input id="nameTitle" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
+    <label class="name-row">Nickname <input id="nameTitle" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
-    <p class="foot">An independent, non-commercial game starring Arizona's state bird.<br>Made by Abhiman Gupta</p>
+    <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span></p>
   </div>
 </div>
 
@@ -158,13 +178,13 @@
     <ol class="board" id="board"></ol>
     <p class="stats" id="stats"></p>
     <p class="fact pix"><b>Desert fact:</b> <span id="fact"></span></p>
-    <label class="name-row">Playing as <input id="nameOver" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
+    <label class="name-row">Nickname <input id="nameOver" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
     <div class="btns">
       <button class="btn" id="again">Fly again</button>
       <button class="btn secondary" id="share">Share</button>
     </div>
     <p class="hint">or tap anywhere / Space</p>
-    <p class="foot">An independent, non-commercial game. Made by Abhiman Gupta</p>
+    <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span></p>
   </div>
 </div>
 
@@ -387,7 +407,7 @@
   // The cactus wren in flight, based on your pixel art: bold white eyebrow, curved bill, spotted cream breast,
   // cinnamon flanks, white-streaked back, and a fanned, barred tail with white tips. Three-tone shading, with
   // warm brown outlines on the belly and dark outlines on top.
-  const WREN_PAL = { k: '#3a2414', o: '#7a5030', D: '#5a3520', d: '#7a4a2c', B: '#8a5a3b', b: '#a8744a', W: '#fffaf0', C: '#f4e7cf', c: '#e0c9a6', T: '#d6965f', t: '#b47646', U: '#ebb57e', S: '#3a2416', G: '#3a3532', g: '#77706a', L: '#a0948a', R: '#a8301a', F: '#3a2a20', f: '#6e4e36', P: '#4a3020' };
+  const WREN_PAL = { k: '#3a2414', o: '#7a5030', D: '#5a3520', d: '#7a4a2c', B: '#8a5a3b', b: '#a8744a', W: '#fffaf0', C: '#f4e7cf', c: '#e0c9a6', T: '#d6965f', t: '#b47646', U: '#ebb57e', S: '#3a2416', G: '#3a3532', g: '#77706a', L: '#a0948a', R: '#a8301a', E: '#1a0c06', F: '#3a2a20', f: '#6e4e36', P: '#4a3020' };
   // body poses: base, blink, flick (tail up on a flap), dive (tail closed), dead (X eyes, ruffled)
   const WREN_BODIES = {
     base: [
@@ -397,8 +417,8 @@
       '...................kddDDDk',
       '............kkkkkkkDDDDDDDk',
       '.kk.......kkbbbbbbkWWWWWWDDk',
-      'kWWkk....kBBBBWWBBkkkkkRCCCkGGGG',
-      'WffFfkk.kBBBBBBBBBBBBCCCCCCkLL..G',
+      'kWWkk....kBBBBWWBBkkkkCERCCkGGGG',
+      'WffFfkk.kBBBBBBBBBBBBCCEECCkLL..G',
       'kkkFffFkBBBBBBWWBBBBBCCCCCCk',
       'WWfFffFftUUUUUUtCCSBBCCCCCo',
       'WWfFffFfUUUUtUUUCSCCSCCCCo',
@@ -418,8 +438,8 @@
       '...................kddDDDk',
       '............kkkkkkkDDDDDDDk',
       '.kk.......kkbbbbbbkWWWWWWDDk',
-      'kWWkk....kBBBBWWBBkkkkkDCCCkGGGG',
-      'WffFfkk.kBBBBBBBBBBBBCCCCCCkLL..G',
+      'kWWkk....kBBBBWWBBkkkkCCCCCkGGGG',
+      'WffFfkk.kBBBBBBBBBBBBCCDDCCkLL..G',
       'kkkFffFkBBBBBBWWBBBBBCCCCCCk',
       'WWfFffFftUUUUUUtCCSBBCCCCCo',
       'WWfFffFfUUUUtUUUCSCCSCCCCo',
@@ -439,8 +459,8 @@
       'kWk................kddDDDk',
       'WfWkk.......kkkkkkkDDDDDDDk',
       'kkfFfk....kkbbbbbbkWWWWWWDDk',
-      'WWfFfWk..kBBBBWWBBkkkkkRCCCkGGGG',
-      'WWfFffFkkBBBBBBBBBBBBCCCCCCkLL..G',
+      'WWfFfWk..kBBBBWWBBkkkkCERCCkGGGG',
+      'WWfFffFkkBBBBBBBBBBBBCCEECCkLL..G',
       'WffFffFfBBBBBBWWBBBBBCCCCCCk',
       'kkfFffFftUUUUUUtCCSBBCCCCCo',
       'kWWFfWFfUUUUtUUUCSCCSCCCCo',
@@ -460,8 +480,8 @@
       '...................kddDDDk',
       '............kkkkkkkDDDDDDDk',
       '..........kkbbbbbbkWWWWWWDDk',
-      '.........kBBBBWWBBkkkkkRCCCkGGGG',
-      '.kk.....kBBBBBBBBBBBBCCCCCCkLL..G',
+      '.........kBBBBWWBBkkkkCERCCkGGGG',
+      '.kk.....kBBBBBBBBBBBBCCEECCkLL..G',
       'kWWkkkkkBBBBBBWWBBBBBCCCCCCk',
       'WWfFffFftUUUUUUtCCSBBCCCCCo',
       'WWfFfWFfUUUUtUUUCSCCSCCCCo',
@@ -481,7 +501,7 @@
       '............b..b...kddDDDk',
       '.k..........kkkkkkkDDDDDDDk',
       'kWkk.....bkkbbbbbbkWWWkWkDDk',
-      'kkWFkk...kBBBBWWBBkkkkkkCCCkGGGG',
+      'kkWFkk...kBBBBWWBBkkkkCkCCCkGGGG',
       'WffFfWkkkBBBBBBBBBBBBCkCkCCkLL..G',
       'WffFffFfBBBBBBWWBBBBBCCCCCCk',
       'kWfFffFftUUUUUUtCCSBBCCCCCo',
@@ -567,34 +587,75 @@
     for (const [x, y] of [[3, 8], [7, 6], [6, 10], [4, 11], [8, 9], [5, 5]]) g.set(x, y, '#f2d27a');
   }, { outline: '#4a0a22' });
 
-  function makeHorse(frame, coat) {
-    return paint(28, 24, (g) => {
-      const y0 = 4;
-      g.line(21, y0 + 10, 23, y0 + 16, '#2a1610'); g.line(22, y0 + 10, 24, y0 + 15, '#2a1610');
-      const legs = frame ? [[8, -1], [10, 1], [16, 1], [18, -1]] : [[8, 1], [10, -1], [16, -1], [18, 1]];
-      for (const [x, d] of legs) { g.line(x, y0 + 13, x + d, y0 + 18, coat[1]); g.set(x + d, y0 + 19, '#1e140e'); }
-      g.ell(13.5, y0 + 11, 7.5, 3.6, coat[0]);
-      g.poly([[6, y0 + 11], [10, y0 + 9], [7, y0 + 3], [4, y0 + 4]], coat[0]);
-      g.ell(3.2, y0 + 5, 2.8, 1.7, coat[0], 0.5);
-      g.set(5, y0 + 2, coat[0]); g.set(6, y0 + 2, coat[1]);
-      g.line(7, y0 + 3, 9, y0 + 9, '#2a1610');
-      g.rect(11, y0 + 8, 7, 2, '#a83a2a');
-      g.rect(12, y0 + 7, 5, 1, '#5a3420');
-      g.rect(14, y0 + 8, 1, 4, '#3e4f72'); g.set(14, y0 + 12, '#2a1a10');
-      g.rect(13, y0 + 2, 3, 5, '#d8c8a0'); g.set(12, y0 + 4, '#d8c8a0');
-      g.rect(13, y0, 3, 2, '#c89070');
-      g.rect(11, y0 - 1, 7, 1, '#5a3a22'); g.rect(13, y0 - 3, 3, 2, '#5a3a22');
+  // a ranch horse with a cowboy, walking left: long legs, deep chest, arched neck held high,
+  // a long narrow head, dark mane and a flowing tail (frame 0/1 swing the legs)
+  function makeHorse(frame, coat, mane) {
+    return paint(30, 30, (g) => {
+      const [c0, c1] = coat, hoof = '#1e140e';
+      // tail first so the rump overlaps it
+      g.line(23, 16, 25, 18, mane); g.line(25, 18, 26, 25, mane); g.line(24, 17, 25, 24, mane); g.set(26, 26, mane);
+      // legs: far pair darker, then near pair; thighs thick, cannons thin, dark hooves on the ground line
+      const legs = frame ? [[12, 1, c1], [22, -1, c1], [10, -1, c0], [20, 1, c0]] : [[12, -1, c1], [22, 1, c1], [10, 1, c0], [20, -1, c0]];
+      for (const [x, d, col] of legs) {
+        g.rect(x, 20, 2, 3, col);
+        g.line(x, 23, x + d, 28, col);
+        g.set(x + d, 29, hoof);
+      }
+      g.ell(16, 18.5, 7.6, 3.3, c0);              // barrel
+      g.ell(10, 18.2, 2.8, 3.2, c0);              // deep chest
+      g.ell(22, 17.8, 2.6, 2.8, c0);              // rump
+      g.poly([[8, 20], [12.5, 16], [9.5, 7.5], [6.5, 8.5]], c0); // neck, arched up
+      g.cap(7.5, 9, 2.2, 13, 1.5, c0);            // long head angled down
+      g.set(2, 13, c1); g.set(1, 13, c1);         // muzzle
+      g.set(8, 7, c0); g.set(8, 6, c1);           // ear
+      g.set(6, 10, '#120a06');                    // eye
+      g.line(8, 7, 11, 15, mane); g.line(9, 7, 12, 14, mane); // mane along the crest
+      g.line(14, 21, 19, 21, c1);                 // belly shadow
+      // rider: blanket, saddle, jeans and boot, shirt, face, hat; reins to the bit
+      g.rect(13, 15, 6, 2, '#a83a2a');
+      g.rect(14, 14, 4, 1, '#5a3420');
+      g.rect(15, 15, 1, 5, '#34405e'); g.set(15, 20, '#2a1a10');
+      g.rect(14, 9, 3, 5, '#6a86a8'); g.set(14, 9, '#86a2c2'); g.set(13, 11, '#6a86a8'); g.set(12, 12, '#c89070'); // chambray shirt, arm, hand
+      g.line(12, 12, 4, 12, '#3a2414');
+      g.rect(14, 7, 3, 2, '#c89070');
+      g.rect(12, 6, 7, 1, '#5a3a22'); g.rect(14, 4, 3, 2, '#5a3a22');
     }, { outline: '#24180f' });
   }
-  const HORSES = [['#8a4a2a', '#5e3018'], ['#3a2a22', '#24180f'], ['#c8a070', '#8a6a40']].map((coat) => [makeHorse(0, coat), makeHorse(1, coat)]);
+  // bay, black, and buckskin coats
+  const HORSES = [['#8a4a2a', '#5e3018', '#2a1610'], ['#3a2a22', '#24180f', '#140c08'], ['#c8a070', '#8a6a40', '#2a1610']]
+    .map(([a, b, m]) => [makeHorse(0, [a, b], m), makeHorse(1, [a, b], m)]);
 
   // UI icons for the title screen
   const ICONS = {
-    wren: () => wrenSprite(1, 0),
+    // simplified 16px wren: cocked tail, white eyebrow, dark eye, curved bill, spotted breast
+    wren: () => bitmap([
+      '.........kkkk...',
+      '........kDDDDk..',
+      'kk.....kWWWWWk..',
+      'kBk....kDCECCggg',
+      'kBBk..kBBBCCCCkG',
+      '.kBBkkBBWBBCCCk.',
+      '..kBBBBBBBCSCCk.',
+      '...kBBWBBCCCSk..',
+      '....kTTTTCCSCk..',
+      '.....kTTTTCCk...',
+      '......kkkkkk....',
+    ], WREN_PAL),
     cactus: () => paint(16, 16, (g) => { g.capV(8, 1, 15, 5, '#4b8b52'); g.rect(3, 7, 4, 3, '#4b8b52'); g.capV(4, 3, 9, 3, '#4b8b52'); g.rect(10, 9, 3, 3, '#4b8b52'); g.capV(12, 5, 11, 3, '#4b8b52'); g.rect(7, 2, 1, 12, '#6fae6a'); }),
     sun: () => paint(16, 16, (g) => { g.ell(8, 8, 4.5, 4.5, '#ffb347'); g.ell(7, 7, 2, 2, '#ffe08a'); for (const [x, y] of [[8, 1], [8, 14], [1, 8], [14, 8], [3, 3], [12, 3], [3, 12], [12, 12]]) g.set(x, y, '#ff7a2e'); }, { outline: null }),
-    pear: () => paint(16, 16, (g) => { g.ell(8, 11, 6, 4, '#5d9a48'); g.ell(6, 4.5, 2.4, 3, '#b8235a'); g.ell(11, 5, 2.4, 3, '#b8235a'); g.set(5, 3, '#e8689a'); g.set(10, 4, '#e8689a'); }),
-    hawk: () => HAWK_UP,
+    pear: () => PEAR_SPR, // the same fruit you grab in game
+    // simplified 16px Cooper's hawk: dark cap, red eye, slate back and raised wing, rusty chest, long banded tail
+    hawk: () => paint(16, 12, (g) => {
+      const slate = '#5c6c7e', dark = '#2f3742', rust = '#c8693a';
+      g.rect(10, 6, 6, 2, '#6d7a88'); g.set(12, 6, dark); g.set(12, 7, dark); g.set(14, 6, dark); g.set(14, 7, dark); g.set(15, 6, '#f3efe6'); g.set(15, 7, '#f3efe6');
+      g.ell(7.5, 6.5, 4.5, 2.3, slate);
+      g.rect(4, 7, 6, 2, rust); g.set(5, 8, '#f1e2cf'); g.set(7, 8, '#f1e2cf'); g.set(9, 7, '#f1e2cf');
+      g.poly([[5, 6], [10, 6], [12, 1], [9, 1]], '#47525f'); g.line(9, 1, 12, 1, dark);
+      g.ell(3, 5.5, 2.2, 2, slate);
+      g.rect(2, 3, 3, 2, dark);
+      g.set(2, 5, '#ff5a2a');
+      g.set(0, 6, '#2a2a2a'); g.set(1, 6, '#f2c94c');
+    }, { outline: '#15161c' }),
   };
   function drawIcon(cv, name) {
     const src = ICONS[name]();
@@ -603,11 +664,12 @@
     let x0 = src.width, y0 = src.height, x1 = 0, y1 = 0;
     for (let y = 0; y < src.height; y++) for (let x = 0; x < src.width; x++) if (sc[(y * src.width + x) * 4 + 3]) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
     const sw = x1 - x0 + 1, sh = y1 - y0 + 1;
-    const k = Math.max(1, Math.floor(Math.min(32 / sw, 32 / sh)));
-    cv.width = cv.height = 32;
+    const S = +cv.dataset.size || 32;
+    const k = Math.max(1, Math.floor(Math.min(S / sw, S / sh)));
+    cv.width = cv.height = S;
     const c = cv.getContext('2d');
     c.imageSmoothingEnabled = false;
-    c.drawImage(src, x0, y0, sw, sh, Math.floor((32 - sw * k) / 2), Math.floor((32 - sh * k) / 2), sw * k, sh * k);
+    c.drawImage(src, x0, y0, sw, sh, Math.floor((S - sw * k) / 2), Math.floor((S - sh * k) / 2), sw * k, sh * k);
   }
 
   // =====================================================================
@@ -749,6 +811,7 @@
   function flap() { bird.vy = FLAP; bird.flapT = 0; sfx.flap(); }
   function press() {
     audio();
+    if (!introEl.hidden) { closeIntro(); return; }
     if (paused) { paused = false; return; }
     if (state === 'ready') { state = 'play'; flap(); }
     else if (state === 'play') flap();
@@ -965,27 +1028,57 @@
     },
 
     yucca(d) {
+      // a soaptree yucca: a tall shaggy trunk (sometimes with a side branch) topped by a spiky leaf head,
+      // and a flower stalk no taller than ~105 units with the flower cluster on its upper part
       const top = Math.max(tallTop(d) + 30, GROUND - 330);
-      const th = rand(50, 85), headY = GROUND - th, stalkTop = top + 6;
-      const blooms = season() !== 'winter';
+      const H = GROUND - top;
+      const stalkTop = top + 6, stalkLen = clamp(H * 0.36, 36, 105);
+      const headY = stalkTop + stalkLen + 8, th = GROUND - headY;
+      const blooms = season() === 'spring' || season() === 'monsoon'; // fall and winter: dry seed pods
+      const panBot = stalkTop + stalkLen * 0.6;
       const caps = [
         { x1: 0, y1: GROUND, x2: 0, y2: headY, r: 6 },
         { x1: 0, y1: headY, x2: 0, y2: headY, r: 17 },
         { x1: 0, y1: headY - 10, x2: 0, y2: stalkTop, r: 4 },
-        { x1: 0, y1: stalkTop + 18, x2: 0, y2: stalkTop + 18, r: 10 },
+        { x1: 0, y1: stalkTop + 4, x2: 0, y2: panBot, r: 8 },
       ];
-      const leaves = Array.from({ length: 22 }, (_, i) => ({ a: -2.6 + (i / 21) * 5.2, L: rand(5, 7.5) }));
-      const o = { kind: 'yucca', top: top - 4, reach: 22, caps };
-      Object.assign(o, sculpt(-26, 26, top - 10, GROUND + 4, (g, X, Y) => {
+      let branch = null;
+      if (th > 120 && Math.random() < 0.75) {
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const by = headY + th * rand(0.35, 0.5), bx = side * rand(14, 18), bh = by - rand(30, 44);
+        branch = { by, bx, bh };
+        caps.push({ x1: 0, y1: by, x2: bx, y2: by - 6, r: 5 }, { x1: bx, y1: by - 6, x2: bx, y2: bh, r: 5 }, { x1: bx, y1: bh, x2: bx, y2: bh, r: 13 });
+      }
+      const reach = branch ? Math.abs(branch.bx) + 15 : 22;
+      const leafHead = (n, sc) => Array.from({ length: n }, (_, i) => ({ a: -2.6 + (i / (n - 1)) * 5.2, L: rand(5, 7.5) * sc }));
+      const leaves = leafHead(22, 1), bleaves = leafHead(16, 0.75);
+      const o = { kind: 'yucca', top: top - 4, reach, caps };
+      Object.assign(o, sculpt(-reach - 8, reach + 8, top - 10, GROUND + 4, (g, X, Y) => {
         const cx = Math.round(X(0));
-        g.rect(cx - 1, Y(headY), 3, Y(GROUND) - Y(headY), '#6e5a44');
-        for (let y = Math.round(Y(headY)) + 2; y < Y(GROUND); y += 2) { g.set(cx - 2, y, '#a08a60'); g.set(cx + 2, y + 1, '#8a7450'); }
-        g.line(cx, Y(headY) - 2, cx, Y(stalkTop), '#9a8a5a');
-        if (blooms) for (let i = 0; i < 6; i++) {
-          const y = Y(stalkTop) + 2 + i * 2.2, s = i % 2 ? 1 : -1;
-          g.rect(cx + s * 2 - (s < 0 ? 1 : 0), y, 2, 2, '#fbf6e6'); g.set(cx + s, y + 1, '#9a8a5a');
-        } else for (let i = 0; i < 5; i++) g.set(cx + (i % 2 ? 1 : -1), Y(stalkTop) + 2 + i * 2, '#7a6a48');
-        for (const [i, lf] of leaves.entries()) g.line(cx, Y(headY), cx + Math.sin(lf.a) * lf.L, Y(headY) - Math.cos(lf.a) * lf.L, i % 2 ? '#8aa04a' : '#a8b860');
+        // shaggy trunk: dead leaves hanging down as light/dark flecks
+        const trunk = (x, y0, y1) => {
+          g.rect(x - 1, y0, 3, y1 - y0, '#6e5a44');
+          for (let y = Math.round(y0) + 2; y < y1; y += 2) { g.set(x - 2, y, '#a08a60'); g.set(x + 2, y + 1, '#8a7450'); }
+        };
+        const head = (x, y, lv) => { for (const [i, lf] of lv.entries()) g.line(x, y, x + Math.sin(lf.a) * lf.L, y - Math.cos(lf.a) * lf.L, i % 2 ? '#8aa04a' : '#a8b860'); };
+        trunk(cx, Y(headY), Y(GROUND));
+        if (branch) {
+          const bx = Math.round(X(branch.bx)), jy = Y(branch.by), ey = Y(branch.by - 6);
+          for (let k = -1; k <= 1; k++) g.line(cx, jy + k, bx, ey + k, '#6e5a44');
+          trunk(bx, Y(branch.bh), ey + 1);
+          head(bx, Y(branch.bh), bleaves);
+        }
+        // flower stalk, two pixels wide low down, with a spindle-shaped flower cluster on top
+        const sy0 = Math.round(Y(stalkTop)), sy1 = Math.round(Y(headY)), py1 = Math.round(Y(panBot));
+        g.rect(cx, sy0, 1, sy1 - sy0, '#9a8a5a');
+        g.rect(cx + 1, py1, 1, sy1 - py1, '#7f7048');
+        for (let y = sy0 + 1, i = 0; y < py1; y += 2, i++) {
+          const w = Math.max(1, Math.round(3 * Math.sin((Math.PI * (y - sy0 + 1)) / (py1 - sy0 + 2))));
+          const off = i % 2;
+          if (blooms) { g.rect(cx - w + off, y, w * 2 + 1 - off, 1, '#fbf6e6'); g.set(cx - w + off, y + 1, '#d8c99a'); g.set(cx + w, y + 1, '#d8c99a'); }
+          else { g.set(cx - w + off, y, '#b09a6a'); g.set(cx + w, y, '#8a7448'); g.set(cx + (off ? 1 : -1), y + 1, '#a08a5a'); }
+        }
+        head(cx, Y(headY), leaves);
       }, { outline: null }));
       return o;
     },
@@ -1028,11 +1121,14 @@
     spawned++;
     const low = kind === 'cholla';
     nextGap = rand(low ? 190 : 240, low ? 270 : 340) - 55 * d + o.reach;
-    // now and then a prickly pear fruit hovers in the gap before this plant
+    // now and then a prickly pear fruit hovers in the gap before this plant. It's a bonus, never a trap:
+    // it only sits above the tops of BOTH neighbouring plants, so the line you fly to grab it (or to just
+    // miss it) still clears the next plant without needing the invincibility.
     const prev = obstacles[obstacles.length - 2];
     if (prev && spawned > 3 && pears.length === 0 && invincible <= 0 && Math.random() < 0.14) {
       const room = o.x - o.reach - (prev.x + prev.reach);
-      if (room > 70) pears.push({ x: prev.x + prev.reach + room / 2, y: rand(HEAT_LINE + 45, GROUND - 90), taken: false, p: rand(0, 6) });
+      const hi = HEAT_LINE + 45, lo = Math.min(GROUND - 90, prev.top - 50, o.top - 60); // ~bob + wren size + falling margin
+      if (room > 90 && lo - hi >= 15) pears.push({ x: prev.x + prev.reach + room / 2, y: rand(hi, lo), taken: false, p: rand(0, 6) });
     }
     if (score >= 6 && hawks.length === 0 && Math.random() < 0.16 + 0.24 * d) {
       hawks.push({ x: W + 60, y: rand(HEAT_LINE + 20, 330), warn: 1.25 });
@@ -1723,7 +1819,35 @@
   // =====================================================================
   // UI
   // =====================================================================
+  const introEl = document.getElementById('intro');
   const titleEl = document.getElementById('title');
+  function closeIntro() { introEl.hidden = true; titleEl.hidden = false; }
+
+  // intro wren: a little hover flight with the in-game physics feel. It flaps, climbs, glides down
+  // and tilts with its speed, sways side to side, flicks its tail on each flap and blinks now and then.
+  const introCv = document.getElementById('introWren'), introC = introCv.getContext('2d');
+  const iw = { y: 0, vy: 0, flapT: 1, last: 0 };
+  const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function introFrame(ts) {
+    if (introEl.hidden) return;
+    const now = ts / 1000, dt = Math.min(0.05, now - (iw.last || now));
+    iw.last = now;
+    let frame = 1, body = 'base', rotIdx = 0, x = 0;
+    if (!calm) {
+      iw.vy += 120 * dt; iw.y += iw.vy * dt; iw.flapT += dt;              // sprite pixels, gravity pulls down
+      if (iw.y > 4 && iw.vy > 0) { iw.vy = rand(-50, -38); iw.flapT = 0; } // flap back up, never quite the same height
+      const t = iw.flapT;
+      frame = t < 0.05 ? 0 : t < 0.1 ? 1 : t < 0.16 ? 2 : t < 0.22 ? 1 : iw.vy > 15 ? 3 : 1;
+      body = t < 0.14 ? 'flick' : now % 2.8 < 0.13 ? 'blink' : 'base';
+      rotIdx = clamp(Math.round(clamp(iw.vy / 70, -0.35, 0.55) / (Math.PI / 12)), -3, 6);
+      x = Math.round(Math.sin(now * 1.1) * 4);
+    }
+    const k = 3; // 3 canvas px per sprite px
+    introC.clearRect(0, 0, introCv.width, introCv.height);
+    introC.imageSmoothingEnabled = false;
+    introC.drawImage(wrenSprite(frame, rotIdx, body), x * k, (Math.round(iw.y) - 3) * k, 48 * k, 48 * k);
+    if (!calm) requestAnimationFrame(introFrame);
+  }
   const overEl = document.getElementById('over');
   const muteBtn = document.getElementById('mute');
   const $ = (id) => document.getElementById(id);
@@ -1769,7 +1893,7 @@
     overEl.hidden = false;
   }
 
-  // pixel loudspeaker: cone + three straight sound lines (muted: an X instead)
+  // pixel loudspeaker: cone + two curved sound waves (muted: an X instead)
   function drawMuteIcon() {
     const c = $('muteIcon').getContext('2d');
     c.clearRect(0, 0, 11, 9);
@@ -1779,16 +1903,16 @@
     if (muted) {
       for (let i = 0; i < 4; i++) { c.fillRect(6 + i, 2 + i, 1, 1); c.fillRect(9 - i, 2 + i, 1, 1); }
     } else {
-      c.fillRect(6, 4, 4, 1);                                            // middle line
-      c.fillRect(6, 2, 1, 1); c.fillRect(7, 1, 1, 1); c.fillRect(8, 0, 1, 1); // upper line
-      c.fillRect(6, 6, 1, 1); c.fillRect(7, 7, 1, 1); c.fillRect(8, 8, 1, 1); // lower line
+      // two concentric sound arcs
+      for (const [x, y] of [[6, 2], [7, 3], [7, 4], [7, 5], [6, 6]]) c.fillRect(x, y, 1, 1);
+      for (const [x, y] of [[8, 0], [9, 1], [10, 2], [10, 3], [10, 4], [10, 5], [10, 6], [9, 7], [8, 8]]) c.fillRect(x, y, 1, 1);
     }
   }
   function setMute(m) { muted = m; local.set('waa.muted', m); drawMuteIcon(); }
 
   canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); press(); });
   // overlays: a tap anywhere continues, but a drag (scrolling a tall card) or a scrollbar grab doesn't
-  for (const el of [titleEl, overEl]) {
+  for (const el of [introEl, titleEl, overEl]) {
     let down = null;
     el.addEventListener('pointerdown', (e) => {
       const t = e.target;
@@ -1805,10 +1929,10 @@
   $('again').addEventListener('click', () => { if (state === 'over' && performance.now() - overAt > 650) { audio(); toReady(); } });
   $('share').addEventListener('click', async () => {
     const s = stage();
-    const msg = `I scored ${score} and flew all the way to ${s.place} playing Wren in Arizona 🌵🐦`;
+    const msg = `I scored ${score} and flew all the way to ${s.place} playing Southwest Skies 🌵🐦`;
     const url = location.href.split('#')[0];
     try {
-      if (navigator.share) { await navigator.share({ title: 'Wren in Arizona', text: msg, url }); return; }
+      if (navigator.share) { await navigator.share({ title: 'Southwest Skies', text: msg, url }); return; }
       await navigator.clipboard.writeText(`${msg} ${url}`);
       $('share').textContent = 'Copied!';
     } catch { /* cancelled or blocked */ }
@@ -1835,6 +1959,8 @@
   setMute(muted);
   syncName();
   updateTitleBest();
+  // the intro greets every visit
+  introEl.hidden = false; titleEl.hidden = true; requestAnimationFrame(introFrame);
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => drawIcon(cv, cv.dataset.icon));
   requestAnimationFrame(frame);
 
@@ -1846,6 +1972,7 @@
     spawn(kind, x) { const o = BUILD[kind](0.5); o.x = x ?? W * 0.7; o.passed = true; obstacles.push(o); return o.kind; },
     pear(x, y) { pears.push({ x, y, taken: false, p: 0 }); },
     get invincible() { return invincible; },
+    get pears() { return pears; }, get obstacles() { return obstacles; },
     hawk() { hawks.push({ x: W * 0.55, y: bird.y - 30, warn: 0 }); },
     freeze(v = true) { frozen = v; paused = false; },
     sim(sec, autopilot = true) { for (let i = 0; i < sec / STEP; i++) { if (autopilot && state === 'play' && bird.y > 150 && bird.vy > -50) flap(); tick(STEP); } return { state, score, stage: stage().place + ' ' + stage().label, obstacles: obstacles.map((o) => o.kind) }; },
