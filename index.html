@@ -29,7 +29,7 @@
 <meta name="apple-mobile-web-app-title" content="Prickly Panic">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink: #2a1a10;
@@ -52,6 +52,8 @@
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     font-family: "Silkscreen", ui-monospace, monospace;
+    /* only Silkscreen's regular weight: its bold W and 4 are oddly shaped, and faked bold smears the pixels */
+    font-synthesis: none;
     -webkit-font-smoothing: none;
     color: var(--ink);
   }
