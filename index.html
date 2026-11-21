@@ -173,7 +173,7 @@
   .links a:hover, .links a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
   .links canvas { width: 11px; height: 11px; image-rendering: pixelated; }
 
-  /* "get the app" offer: a bright banner near the top of the game-over card (and the title card for returning players) */
+  /* offer banners: "Ping me" or "Get the app" near the top of the game-over card (one at a time), "Ping me" on the app's title card */
   .install { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 18px 4px 6px; padding: 14px 12px 12px; background: #ffd66b; text-align: left; position: relative; }
   .install[hidden] { display: none; }
   .install img { flex: none; width: 48px; height: 48px; image-rendering: pixelated; animation: hop 1.1s steps(1) infinite; }
@@ -192,6 +192,7 @@
   #guide { z-index: 6; background: rgba(29, 18, 54, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); align-items: flex-start; padding-top: max(16px, env(safe-area-inset-top)); }
   #guide.arrow-top { padding-top: 84px; }
   .guide-card { max-width: 400px; padding: 18px 16px 12px; margin-bottom: 64px; --sys: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  #guide.arrow-bottom .guide-card { max-height: calc(100% - 56px); } /* a tall card scrolls rather than run under a "Start here" at the bottom */
   .guide-card .install-close { top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; box-shadow: none; background: rgba(42, 26, 16, 0.08); color: var(--ink-soft); font: 400 22px/1 var(--sys); }
   .g-hero { position: relative; width: 52px; height: 52px; margin: 0 auto; }
   .g-hero img { width: 52px; height: 52px; border-radius: 12px; image-rendering: pixelated; box-shadow: 0 4px 12px rgba(42, 26, 16, 0.28); display: block; }
@@ -283,6 +284,12 @@
     <p class="name-need" id="nameTitleNeed" hidden>Type a nickname to fly</p>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
+    <div class="install notify pix" data-notify="title" hidden>
+      <canvas data-icon="bell" data-size="40" aria-hidden="true"></canvas>
+      <p class="install-text notify-text"><b>Defend your score</b><span>Get a ping when someone beats your best.</span></p>
+      <button class="btn notify-btn">Ping me</button>
+      <button class="install-close pix" aria-label="Not now">&times;</button>
+    </div>
     <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
 </div>
@@ -299,6 +306,12 @@
     <p class="near-best" id="nearBest"></p>
     <p class="stats" id="runLine"></p>
     <p class="rank-line" id="rankLine"></p>
+    <div class="install notify pix" data-notify="over" hidden>
+      <canvas data-icon="bell" data-size="40" aria-hidden="true"></canvas>
+      <p class="install-text notify-text"><b>Defend your score</b><span>Get a ping when someone beats your best.</span></p>
+      <button class="btn notify-btn">Ping me</button>
+      <button class="install-close pix" aria-label="Not now">&times;</button>
+    </div>
     <div class="install pix" data-install hidden>
       <span class="install-tag">FREE</span>
       <img src="icon-192.png" alt="" width="48" height="48">
@@ -313,12 +326,6 @@
       <button class="btn secondary" id="share">Share</button>
     </div>
     <p class="hint">or tap anywhere / Space</p>
-    <div class="install notify pix" id="notify" hidden>
-      <canvas data-icon="bell" data-size="40" aria-hidden="true"></canvas>
-      <p class="install-text" id="notifyText"><b>Defend your score</b><span>Get a ping when someone beats your best.</span></p>
-      <button class="btn" id="notifyBtn">Ping me</button>
-      <button class="install-close pix" id="notifyClose" aria-label="Not now">&times;</button>
-    </div>
     <div class="tabs" role="tablist">
       <button role="tab" data-tab="week" class="on" aria-selected="true">This week</button>
       <button role="tab" data-tab="all" aria-selected="false">All time</button>
@@ -336,7 +343,7 @@
     <button class="install-close pix" id="guideClose" aria-label="Close">&times;</button>
     <div class="g-hero" aria-hidden="true"><img src="icon-192.png" alt="" width="52" height="52"><b>+</b></div>
     <h2 id="guideTitle">Add to Home Screen</h2>
-    <p class="g-lead">Then it opens in one tap, like an app.</p>
+    <p class="g-lead" id="guideLead">Then it opens in one tap, like an app.</p>
     <div class="g-strip" id="guideStrip" aria-hidden="true"></div>
     <ol class="g-steps" id="guideSteps"></ol>
     <p class="g-note" id="guideNote"></p>
@@ -427,16 +434,52 @@
   // =====================================================================
   // storage (never trusted to exist)
   // =====================================================================
-  const makeStore = (kind) => ({
+  const makeStore = (kind, onSet) => ({
     get(k, d) { try { const v = window[kind].getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-    set(k, v) { try { window[kind].setItem(k, JSON.stringify(v)); } catch {} },
+    set(k, v) { try { window[kind].setItem(k, JSON.stringify(v)); } catch {} if (onSet) onSet(k); },
   });
-  const local = makeStore('localStorage');
+  const CARRIED = ['waa.name', 'waa.best', 'waa.player']; // what an iPhone browser hands on to its Home Screen app (below)
+  const local = makeStore('localStorage', (k) => { if (CARRIED.includes(k)) saveCarry(); });
   const sess = makeStore('sessionStorage');
-  let best = local.get('waa.best', 0);
-  let muted = local.get('waa.muted', false);
   // the leaderboard's own name cleanup (cleanName in api/src/index.js), so a name it would empty out, like "<>", counts as no name here too
   const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
+
+  // where the game is running: the installed app or a browser tab, which phone, and whether it's the browser inside another app
+  const ua = navigator.userAgent;
+  const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = !isAndroid && (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const inAppBrowser = /Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Line\//i.test(ua);
+
+  // iPhone and iPad keep a Home Screen app's storage apart from the browser's, so someone who played in Safari and then
+  // added the game to their Home Screen would start over in the app: no nickname, no best, and a second spot on the
+  // board. What iOS does copy into the new app is the browser's cookies (iOS 17.2+), when Add to Home Screen is tapped.
+  // So an iPhone or iPad browser also keeps the nickname, best and board identity in a cookie, and an app that opens
+  // with none of its own takes them over, once.
+  const carryCookie = (v, age) => { document.cookie = `waa_carry=${v}; Max-Age=${age}; Path=/; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`; };
+  function saveCarry() {
+    if (!isIOS || inApp) return;
+    const c = [cleanName(local.get('waa.name', local.get('fwf.name', ''))), local.get('waa.best', 0), local.get('waa.player', null)];
+    // Safari keeps a cookie set from script for 7 days at most, so every visit renews it
+    try { if (c[0] || c[1] || c[2]) carryCookie(encodeURIComponent(JSON.stringify(c)), 7 * 86400); } catch {}
+  }
+  let carried = false; // this launch of the app took over the browser's game
+  try {
+    const m = isIOS && inApp && document.cookie.match(/(?:^|;\s*)waa_carry=([^;]+)/);
+    if (m) {
+      carryCookie('', 0); // read once; the app has no use for sending it with every request
+      const [name, b, p] = JSON.parse(decodeURIComponent(m[1]));
+      if (local.get('waa.player', null) == null && !local.get('waa.best', 0) && !local.get('waa.name', '')) {
+        if (cleanName(name)) local.set('waa.name', cleanName(name));
+        if (Number.isInteger(b) && b > 0) local.set('waa.best', b);
+        if (p && /^[0-9a-f-]{36}$/.test(p.id) && /^[\w-]{16,128}$/.test(p.key)) local.set('waa.player', { id: p.id, key: p.key });
+        carried = true;
+      }
+    }
+  } catch { /* unreadable: the app starts fresh */ }
+
+  let best = local.get('waa.best', 0);
+  let muted = local.get('waa.muted', false);
   let playerName = cleanName(local.get('waa.name', local.get('fwf.name', ''))); // no default: the player types one
   let runs = sess.get('waa.runs', []);
   let lastRunN = 0;
@@ -2243,11 +2286,20 @@
   }
   document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => loadBoard(b.dataset.tab)));
 
-  // ---- pings: web push when someone passes your best (needs the installed app on iPhone) ----
+  // ---- pings: web push when someone passes your best ----
+  // Android phones, computers and the installed app get them right in the browser, so there "Ping me" is the first offer.
+  // iPhone and iPad only allow them in the Home Screen app: their browsers get the "Get the app" offer instead, and the
+  // app offers pings once it's opened (on its title card the first time, when it has taken over the browser's game).
   const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol !== 'file:';
   let pushOn = local.get('waa.pushOn', false), notifyLater = false;
+  let pingAnswered = false; // the ping offer was taken up or put off on this game-over card: no second offer until the next one
+  const notifyEls = [...document.querySelectorAll('[data-notify]')];
+  const canPing = () => pushOK && !pushOn && !notifyLater && best > 0 && !!me && Notification.permission !== 'denied';
   function updateNotify() {
-    $('notify').hidden = !pushOK || pushOn || notifyLater || !me || best <= 0 || Notification.permission === 'denied';
+    const can = canPing();
+    // on the game-over card, and on the title card when the app has just taken over an iPhone browser's game
+    notifyEls.forEach((el) => { el.hidden = !can || (el.dataset.notify === 'title' && !carried); });
+    updateInstall(); // the install offer waits its turn
   }
   const b64uBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
   // this browser's push subscription, unless it was made with an old VAPID key (then it's dropped)
@@ -2273,10 +2325,14 @@
       else { pushOn = false; local.set('waa.pushOn', false); }
     } catch { /* offline: check again next visit */ }
   }
-  $('notifyBtn').addEventListener('click', async () => {
-    const say = (h) => { $('notifyText').innerHTML = h; };
+  const notifySay = (h) => notifyEls.forEach((el) => { el.querySelector('.notify-text').innerHTML = h; });
+  async function pingMe() {
+    pingAnswered = true;
     try {
-      if (await Notification.requestPermission() !== 'granted') { say('<b>Pings are off</b><span>You can allow them in your browser settings.</span>'); return; }
+      if (await Notification.requestPermission() !== 'granted') {
+        notifySay(`<b>Pings are off</b><span>You can allow them in ${isIOS ? 'Settings &gt; Notifications' : 'your browser settings'}.</span>`);
+        return;
+      }
       await ensurePlayer();
       const { vapid } = await api('GET', '/config');
       const reg = await navigator.serviceWorker.ready;
@@ -2284,12 +2340,15 @@
       const sub = (await pushSub(reg, key)) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
       await api('POST', '/push', { subscription: sub.toJSON() });
       pushOn = true; local.set('waa.pushOn', true);
-      say('<b>You\'re on!</b><span>We\'ll ping you if someone beats your best.</span>');
-      $('notifyBtn').hidden = true;
+      notifySay('<b>You\'re on!</b><span>We\'ll ping you if someone beats your best.</span>');
+      notifyEls.forEach((el) => { el.querySelector('.notify-btn').hidden = true; });
       setTimeout(updateNotify, 2500);
-    } catch { say('<b>Couldn\'t turn on pings</b><span>Try again in a bit.</span>'); }
-  });
-  $('notifyClose').addEventListener('click', () => { notifyLater = true; updateNotify(); });
+    } catch { notifySay('<b>Couldn\'t turn on pings</b><span>Try again in a bit.</span>'); }
+  }
+  for (const el of notifyEls) {
+    el.querySelector('.notify-btn').addEventListener('click', pingMe);
+    el.querySelector('.install-close').addEventListener('click', () => { pingAnswered = true; notifyLater = true; updateNotify(); });
+  }
 
   // pick a fact about something in the scene: what got you first, then whatever else was around
   function sceneFact() {
@@ -2303,6 +2362,7 @@
   }
 
   function showOver(isBest) {
+    pingAnswered = false; // a new game-over card gets a fresh offer
     $('reason').textContent = reason;
     $('cause').textContent = cause;
     $('oScore').textContent = score;
@@ -2371,16 +2431,15 @@
   // ---- "get the app": after your first run, offer to install the game so it's one tap to come back ----
   // Chrome, Edge and Android hand us a real install prompt; iPhone and iPad have none, so there we show
   // the Share > Add to Home Screen steps instead. Hidden once installed, inside the app, or after the x.
-  const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  const isIOS = !isAndroid && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   // The x only snoozes it for this visit; after three snoozes it stays away for good.
   let installEvt = null, installOff = local.get('waa.installHide', false), installLater = false;
   let installSnoozes = local.get('waa.installSnooze', 0);
   const installEls = [...document.querySelectorAll('[data-install]')];
   function updateInstall() {
-    const can = !(inApp || installOff || installLater) && !!(installEvt || isIOS || isAndroid);
-    // only on the game-over card: nobody is asked to install before they've played a run
+    // only on the game-over card: nobody is asked to install before they've played a run. And one offer at a time: where
+    // the browser can do pings, "Ping me" goes first, and this gets its turn at the next game over once pings are on,
+    // turned down or put off
+    const can = !(inApp || installOff || installLater) && !!(installEvt || isIOS || isAndroid) && !canPing() && !pingAnswered;
     installEls.forEach((el) => { el.hidden = !can; });
   }
   function hideInstall(forever) {
@@ -2413,12 +2472,20 @@
   const icon = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
   const pill = (t) => `<span class="g-pill">${t}</span>`;
   function guidePlan() {
-    const ua = navigator.userAgent;
-    if (/Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Line\//i.test(ua)) return {
+    if (inAppBrowser) return {
       title: 'Open in your browser first',
       steps: [[icon('hdots'), 'Tap the <b>&middot;&middot;&middot;</b> button', 'Top right corner'], [icon('globe'), `Tap <b>Open in ${isIOS ? 'Safari' : 'browser'}</b>`, 'It might say "Open in external browser"'], [pill('Show me how'), 'Tap <b>Show me how</b> again there']],
       arrow: 'top-right',
     };
+    const g = installPlan();
+    if (isIOS) {
+      // on iPhone and iPad the Home Screen app is where pings work, and the cookie saveCarry keeps takes the nickname and best along
+      g.lead = 'Then it opens in one tap, like an app, and can ping you when someone beats your best.';
+      g.note = [g.note, 'Your nickname and best come along.'].filter(Boolean).join('<br>');
+    }
+    return g;
+  }
+  function installPlan() {
     if (isIOS) {
       const v = +((ua.match(/Version\/(\d+)/) || [])[1] || 0);
       const otherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua), ipad = !/iPhone|iPod/.test(ua);
@@ -2447,7 +2514,9 @@
   }
   function openGuide() {
     const g = guidePlan();
+    saveCarry(); // up to date right before Add to Home Screen copies it
     $('guideTitle').textContent = g.title || 'Add to Home Screen';
+    $('guideLead').textContent = g.lead || 'Then it opens in one tap, like an app.';
     $('guideSteps').innerHTML = g.steps.map(([ic, text, sub], i) =>
       `<li><span class="g-num">${i + 1}</span><span class="g-icon">${ic}</span><span class="g-text">${text}${sub ? `<small>${sub}</small>` : ''}</span></li>`).join('');
     $('guideNote').innerHTML = g.note || '';
@@ -2456,6 +2525,7 @@
     $('guideArrow').className = 'g-arrow' + (g.arrow ? ' ' + g.arrow : '');
     $('guideArrow').hidden = !g.arrow;
     guideEl.classList.toggle('arrow-top', g.arrow === 'top-right'); // keep the card clear of the arrow
+    guideEl.classList.toggle('arrow-bottom', /^bottom/.test(g.arrow || ''));
     guideEl.hidden = false;
   }
   function closeGuide() { guideEl.hidden = true; }
@@ -2507,6 +2577,8 @@
   updateTitleBest();
   if (me && best > 0) api('GET', `/board?period=week&limit=1&player=${me.id}`).then((d) => updateTitleBest(d.top[0] && d.top[0].me ? 1 : d.me && d.me.rank)).catch(() => {});
   syncPush();
+  saveCarry();    // an iPhone or iPad browser renews the cookie that carries the game into a Home Screen app
+  updateNotify(); // and an app that just took it over offers pings on the title card
   // the intro greets every visit
   introEl.hidden = false; titleEl.hidden = true; requestAnimationFrame(introFrame);
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => drawIcon(cv, cv.dataset.icon));
