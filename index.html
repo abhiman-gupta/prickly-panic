@@ -186,6 +186,42 @@
   .install-tag { position: absolute; top: -9px; left: 10px; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; letter-spacing: 1px; }
   .install-close { position: absolute; top: -10px; right: -10px; width: 22px; height: 22px; font: inherit; font-size: 13px; line-height: 1; background: var(--panel); border: 0; color: var(--ink-soft); cursor: pointer; padding: 0; }
   .install-close:hover, .install-close:focus-visible { color: var(--accent); }
+  /* install guide: plain, large, readable text (not the pixel font) so anyone can follow it */
+  #guide { z-index: 6; background: rgba(29, 18, 54, 0.6); align-items: flex-start; padding-top: max(16px, env(safe-area-inset-top)); }
+  #guide.arrow-top { padding-top: 76px; }
+  .guide-card { max-width: 420px; padding: 18px 16px 14px; margin-bottom: 64px; }
+  .guide-card h2 { font-size: 19px; }
+  .guide-card .install-close { top: 10px; right: 10px; width: 34px; height: 34px; font-size: 20px; }
+  .guide-card h2 { padding: 0 34px; }
+  .g-lead { font: 16px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color: var(--ink); margin-top: 8px; -webkit-font-smoothing: antialiased; }
+  .g-strip { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 10px; flex-wrap: wrap; }
+  .g-chip { display: grid; place-items: center; min-width: 34px; height: 34px; padding: 0 4px; border-radius: 9px; background: #fff; color: #111; box-shadow: 0 0 0 2px var(--ink); }
+  .g-chip svg { width: 20px; height: 20px; }
+  .g-chip .g-pill { font-size: 13px; }
+  .g-sep { color: var(--accent); font: 700 20px -apple-system, system-ui, sans-serif; }
+  .g-steps { list-style: none; text-align: left; margin-top: 12px; display: grid; gap: 8px; }
+  .g-steps li { display: flex; align-items: center; gap: 12px; background: #fff; padding: 8px 10px; box-shadow: 0 0 0 2px var(--ink); }
+  .g-num { flex: none; width: 30px; height: 30px; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 16px; font-weight: 700; }
+  .g-icon { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: #eef0f4; color: #111; }
+  .g-icon svg { width: 26px; height: 26px; }
+  .g-pill { display: inline-block; font: 600 15px -apple-system, system-ui, sans-serif; color: #0a84ff; -webkit-font-smoothing: antialiased; white-space: nowrap; }
+  .g-steps li .g-icon:has(.g-pill) { width: auto; min-width: 44px; padding: 0 10px; }
+  .g-text { flex: 1; font: 18px/1.3 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color: #111; -webkit-font-smoothing: antialiased; }
+  .g-text b { font-weight: 700; }
+  .g-text small { display: block; font-size: 14px; color: #555; margin-top: 2px; }
+  .g-note { font: 15px/1.4 -apple-system, system-ui, sans-serif; color: var(--ink-soft); margin-top: 12px; -webkit-font-smoothing: antialiased; }
+  .g-note:empty { display: none; }
+  .g-arrow { position: fixed; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 2px; color: #fff; font-size: 13px; pointer-events: none; animation: g-bob 0.9s ease-in-out infinite; }
+  .g-arrow[hidden] { display: none; }
+  .g-arrow span { background: var(--accent); padding: 3px 8px; box-shadow: 0 0 0 2px var(--ink); }
+  .g-arrow i { width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 22px solid var(--accent); filter: drop-shadow(0 2px 0 var(--ink)); }
+  .g-arrow.bottom-menu { bottom: max(6px, env(safe-area-inset-bottom)); left: 28%; transform: translateX(-50%); }
+  .g-arrow.bottom-center { bottom: max(6px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); }
+  .g-arrow.bottom-right { bottom: max(6px, env(safe-area-inset-bottom)); right: 6%; }
+  .g-arrow.top-right { top: max(6px, env(safe-area-inset-top)); right: 10px; flex-direction: column-reverse; }
+  .g-arrow.top-right i { border-top: 0; border-bottom: 22px solid var(--accent); }
+  @keyframes g-bob { 50% { margin-bottom: -6px; margin-top: 6px; } }
+  @media (prefers-reduced-motion: reduce) { .g-arrow { animation: none; } }
   .ios-share { display: inline-block; width: 11px; height: 13px; vertical-align: -2px; margin: 0 1px; }
   @keyframes hop { 0%, 60% { transform: none; } 70% { transform: translateY(-4px); } 80% { transform: translateY(-2px); } }
   @media (prefers-reduced-motion: reduce) { .install img { animation: none; } }
@@ -284,6 +320,19 @@
     <p class="fact pix"><b>Desert fact:</b> <span id="fact"></span></p>
     <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
+</div>
+
+<div id="guide" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+  <div class="card pix guide-card">
+    <button class="install-close pix" id="guideClose" aria-label="Close">&times;</button>
+    <h2 id="guideTitle">Add to Home Screen</h2>
+    <p class="g-lead">Then it opens in one tap, like an app.</p>
+    <div class="g-strip" id="guideStrip" aria-hidden="true"></div>
+    <ol class="g-steps" id="guideSteps"></ol>
+    <p class="g-note" id="guideNote"></p>
+    <div class="btns"><button class="btn" id="guideDone">Got it</button></div>
+  </div>
+  <div class="g-arrow" id="guideArrow" hidden aria-hidden="true"><span>Start here</span><i></i></div>
 </div>
 
 <script>
@@ -956,6 +1005,7 @@
   function flap() { bird.vy = FLAP; bird.flapT = 0; sfx.flap(); }
   function press() {
     audio();
+    if (!$('guide').hidden) return;
     if (!introEl.hidden) { closeIntro(); return; }
     if (paused) { paused = false; return; }
     if (state === 'ready') { state = 'play'; flap(); startTicket(); }
@@ -2273,28 +2323,91 @@
     if (forever) { installOff = true; local.set('waa.installHide', true); } else installLater = true;
     updateInstall();
   }
-  const INSTALL_HTML = installEls[0].querySelector('.install-text').innerHTML;
+  const installLabel = () => (installEvt ? 'Install' : 'Show me how');
   window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); installEvt = e; installLater = false;
-    // a real one-tap prompt is available (Chrome, Edge, Samsung Internet): drop any manual steps we were showing
-    installEls.forEach((el) => { el.querySelector('.install-text').innerHTML = INSTALL_HTML; el.querySelector('.install-btn').textContent = 'Install'; });
+    e.preventDefault(); installEvt = e; installLater = false; // Chrome, Edge, Samsung Internet: a real one-tap install
+    installEls.forEach((el) => { el.querySelector('.install-btn').textContent = installLabel(); });
     updateInstall();
   });
-  window.addEventListener('appinstalled', () => { installEvt = null; hideInstall(true); });
-  // no install prompt from the browser: walk them through it. New iPhone Safari hides Share behind the menu button left of the address.
-  const MENU_ICON = '<svg class="ios-share" viewBox="0 0 11 9" aria-label="menu"><path d="M0 0h11v1H0zM0 4h11v1H0zM0 8h11v1H0z" fill="currentColor"/></svg>';
-  const SHARE_ICON = '<svg class="ios-share" viewBox="0 0 11 13" aria-label="Share"><path d="M5 0h1v1h1v1h1v1H7V2H6v6H5V2H4v1H3V2h1V1h1z M0 5h3v1H1v6h9V6H8V5h3v8H0z" fill="currentColor"/></svg>';
-  const IOS_STEPS = `<b>Add to Home Screen</b><span>Tap ${MENU_ICON} left of the address bar, then ${SHARE_ICON} Share, then Add to Home Screen.</span>`;
-  const DOTS_ICON = '<svg class="ios-share" style="width:4px" viewBox="0 0 3 13" aria-label="menu"><path d="M0 0h3v3H0zM0 5h3v3H0zM0 10h3v3H0z" fill="currentColor"/></svg>';
-  const ANDROID_STEPS = `<b>Add to Home screen</b><span>Tap the ${DOTS_ICON} browser menu, then Install app or Add to Home screen.</span>`;
+  window.addEventListener('appinstalled', () => { installEvt = null; closeGuide(); hideInstall(true); });
+
+  // ---- no one-tap install from the browser: a step-by-step guide, written for anyone ----
+  // Steps match what's on screen (checked in Safari on iOS 27: the menu button, Share, View More,
+  // Add to Home Screen, Add). Big numbers, the same icons the phone shows, plain words, and an arrow
+  // pointing at where to tap first.
+  const guideEl = $('guide');
+  const ICO = {
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    share: '<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M8 10H6v10h12V10h-2"/>',
+    more: '<path d="M6 9.5l6 6 6-6"/>',
+    addsq: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
+    vdots: '<circle cx="12" cy="5.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="18.5" r="1.6" fill="currentColor"/>',
+    hdots: '<circle cx="5.5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor"/>',
+    globe: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/>',
+    phone: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 9v6M9 12h6"/>',
+  };
+  const icon = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k]}</svg>`;
+  const pill = (t) => `<span class="g-pill">${t}</span>`;
+  function guidePlan() {
+    const ua = navigator.userAgent;
+    if (/Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|BytedanceWebview|Snapchat|LinkedInApp|Line\//i.test(ua)) return {
+      title: 'Open in your browser first',
+      steps: [[icon('hdots'), 'Tap the <b>&middot;&middot;&middot;</b> button', 'Top right corner'], [icon('globe'), `Tap <b>Open in ${isIOS ? 'Safari' : 'browser'}</b>`, 'It might say "Open in external browser"'], [pill('Show me how'), 'Tap <b>Show me how</b> again there']],
+      arrow: 'top-right',
+    };
+    if (isIOS) {
+      const v = +((ua.match(/Version\/(\d+)/) || [])[1] || 0);
+      const otherBrowser = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua), ipad = !/iPhone|iPod/.test(ua);
+      if (otherBrowser || ipad) return {
+        steps: [[icon('share'), 'Tap <b>Share</b>', 'Top right, next to the web address'], [icon('addsq'), 'Tap <b>Add to Home Screen</b>', 'Scroll down if you don\'t see it'], [pill('Add'), 'Tap <b>Add</b>']],
+        arrow: otherBrowser ? 'top-right' : null,
+      };
+      if (v >= 26) return {
+        steps: [[icon('menu'), 'Tap the <b>menu</b> button', 'At the bottom, left of the web address'], [icon('share'), 'Tap <b>Share</b>'], [icon('more'), 'Tap <b>View More</b>'], [icon('addsq'), 'Tap <b>Add to Home Screen</b>'], [pill('Add'), 'Tap <b>Add</b>', 'Top right corner']],
+        note: 'No menu button? Tap <b>Share</b> at the bottom of the screen instead.',
+        arrow: 'bottom-menu',
+      };
+      return {
+        steps: [[icon('share'), 'Tap <b>Share</b>', 'At the bottom of the screen'], [icon('addsq'), 'Tap <b>Add to Home Screen</b>', 'Scroll down if you don\'t see it'], [pill('Add'), 'Tap <b>Add</b>', 'Top right corner']],
+        arrow: 'bottom-center',
+      };
+    }
+    if (/SamsungBrowser/.test(ua)) return {
+      steps: [[icon('menu'), 'Tap the <b>menu</b> button', 'Bottom right corner'], [icon('addsq'), 'Tap <b>Add page to</b>'], [icon('phone'), 'Tap <b>Home screen</b>']],
+      arrow: 'bottom-right',
+    };
+    return {
+      steps: [[icon('vdots'), 'Tap the <b>menu</b> button', 'Top right corner'], [icon('phone'), 'Tap <b>Add to Home screen</b>', 'Or "Install app"'], [pill('Install'), 'Tap <b>Install</b>', 'Or "Add"']],
+      arrow: 'top-right',
+    };
+  }
+  function openGuide() {
+    const g = guidePlan();
+    $('guideTitle').textContent = g.title || 'Add to Home Screen';
+    $('guideSteps').innerHTML = g.steps.map(([ic, text, sub], i) =>
+      `<li><span class="g-num">${i + 1}</span><span class="g-icon">${ic}</span><span class="g-text">${text}${sub ? `<small>${sub}</small>` : ''}</span></li>`).join('');
+    $('guideNote').innerHTML = g.note || '';
+    // the same steps as a row of small icons, high on the card, so they stay in view when the browser's menus cover the rest
+    $('guideStrip').innerHTML = g.steps.map(([ic]) => `<span class="g-chip">${ic}</span>`).join('<span class="g-sep">&rsaquo;</span>');
+    $('guideArrow').className = 'g-arrow' + (g.arrow ? ' ' + g.arrow : '');
+    $('guideArrow').hidden = !g.arrow;
+    guideEl.classList.toggle('arrow-top', g.arrow === 'top-right'); // keep the card clear of the arrow
+    guideEl.hidden = false;
+  }
+  function closeGuide() { guideEl.hidden = true; }
+  $('guideDone').addEventListener('click', closeGuide);
+  $('guideClose').addEventListener('click', closeGuide);
+  guideEl.addEventListener('pointerdown', (e) => { if (e.target === guideEl) closeGuide(); });
+
   for (const el of installEls) {
     const btn = el.querySelector('.install-btn');
+    btn.textContent = installLabel();
     btn.addEventListener('click', async () => {
       if (installEvt) {
         const evt = installEvt; installEvt = null;
         try { await evt.prompt(); const { outcome } = await evt.userChoice; hideInstall(outcome === 'accepted'); } catch { hideInstall(false); }
-      } else if (btn.textContent === 'Got it') hideInstall(false);
-      else { installEls.forEach((e) => { e.querySelector('.install-text').innerHTML = isIOS ? IOS_STEPS : ANDROID_STEPS; e.querySelector('.install-btn').textContent = 'Got it'; }); }
+        installEls.forEach((e) => { e.querySelector('.install-btn').textContent = installLabel(); });
+      } else openGuide();
     });
     el.querySelector('.install-close').addEventListener('click', () => {
       installSnoozes++; local.set('waa.installSnooze', installSnoozes);
@@ -2338,6 +2451,7 @@
   }
 
   // test hooks, only with ?debug in the URL
+  if (/[?&]debug\b/.test(location.search) && /[?&]guide\b/.test(location.search)) { introEl.hidden = true; titleEl.hidden = false; openGuide(); }
   if (/[?&]debug\b/.test(location.search)) window.__waa = {
     get state() { return state; }, get score() { return score; }, set score(v) { score = v; }, get heat() { return heat; }, get bird() { return bird; },
     set tod(v) { tod = v; },
