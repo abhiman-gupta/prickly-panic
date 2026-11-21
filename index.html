@@ -900,7 +900,10 @@
   // =====================================================================
   // audio (synthesized)
   // =====================================================================
-  let actx = null, master = null, noiseBuf = null;
+  let actx = null, master = null, noiseBuf = null, audioUnlocked = false;
+  // iPhone: by default web audio obeys the ring/silent switch, so most players hear nothing. Asking for
+  // "playback" plays game sound like a video does (iOS 16.4+). Must be set before the context starts.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
   function audio() {
     if (!actx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -911,9 +914,22 @@
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (actx.state === 'suspended') actx.resume();
+    // iOS also uses "interrupted" (after a call, Siri, or switching apps)
+    if (actx.state !== 'running') actx.resume().catch(() => {});
     return actx;
   }
+  // iOS only lets audio start inside a tap it counts as a gesture (touchend / click, not touchstart or
+  // pointerdown, which is what flaps). So on every such gesture, make sure the context is running and,
+  // the first time, play a silent sample to unlock it.
+  function unlockAudio() {
+    const a = audio(); if (!a) return;
+    if (!audioUnlocked) {
+      try { const src = a.createBufferSource(); src.buffer = a.createBuffer(1, 1, a.sampleRate); src.connect(a.destination); src.start(0); } catch {}
+      audioUnlocked = true;
+    }
+  }
+  for (const ev of ['touchend', 'click', 'keydown']) window.addEventListener(ev, unlockAudio, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && actx && actx.state !== 'running') actx.resume().catch(() => {}); });
   function tone(f1, f2, dur, type = 'sine', vol = 0.2, delay = 0) {
     const a = audio(); if (!a || muted) return;
     const t = a.currentTime + delay;
@@ -1989,7 +2005,9 @@
         }
       } else {
         const img = Math.sin(time * 12) > 0 ? HAWK_UP : HAWK_DOWN;
+        lctx.globalAlpha = ghost; // harmless while you're powered up, so it fades like the plants
         lctx.drawImage(img, LX(hk.x) - 22, LY(hk.y) - 13);
+        lctx.globalAlpha = 1;
       }
     }
     drawWren(lctx);
