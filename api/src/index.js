@@ -110,14 +110,15 @@ async function submitScore(req, env, ctx) {
   const week = weekKey(now);
   const stmts = [env.DB.prepare('UPDATE players SET name = ? WHERE id = ?').bind(name, player.id)];
   if (score > prevBest) stmts.push(env.DB.prepare('UPDATE players SET best = ?, best_at = ? WHERE id = ?').bind(score, now, player.id));
-  stmts.push(env.DB.prepare(`INSERT INTO weekly (week, player, score, at) VALUES (?, ?, ?, ?)
+  if (score > 0) stmts.push(env.DB.prepare(`INSERT INTO weekly (week, player, score, at) VALUES (?, ?, ?, ?)
     ON CONFLICT (week, player) DO UPDATE SET score = excluded.score, at = excluded.at WHERE excluded.score > weekly.score`).bind(week, player.id, score, now));
   await env.DB.batch(stmts);
 
   const best = Math.max(prevBest, score);
   const rank = player.banned ? null : await rankOf(env, 'all', best, player.id);
-  const wk = await env.DB.prepare('SELECT score FROM weekly WHERE week = ? AND player = ?').bind(week, player.id).first();
-  const weekRank = player.banned ? null : await rankOf(env, 'week', wk.score, player.id, week);
+  const wk = await env.DB.prepare('SELECT score FROM weekly WHERE week = ? AND player = ? AND score > 0').bind(week, player.id).first();
+  const weekRank = player.banned || !wk ? null : await rankOf(env, 'week', wk.score, player.id, week);
+  const rankAll = best > 0 ? rank : null;
 
   // who did this score just pass? players whose best sat between the old best and the new score
   let passed = [];
@@ -127,7 +128,7 @@ async function submitScore(req, env, ctx) {
     passed = results;
     if (passed.length) ctx.waitUntil(notifyPassed(env, passed, name, score, now));
   }
-  return json({ ok: true, best, rank, weekRank, passed: passed.length, week });
+  return json({ ok: true, best, rank: rankAll, weekRank, passed: passed.length, week });
 }
 
 async function notifyPassed(env, passed, name, score, now) {
@@ -156,7 +157,7 @@ async function notifyPassed(env, passed, name, score, now) {
 async function rankOf(env, period, score, id, week) {
   const r = period === 'week'
     ? await env.DB.prepare(`SELECT COUNT(*) AS n FROM weekly JOIN players ON players.id = weekly.player
-        WHERE weekly.week = ? AND players.banned = 0 AND (weekly.score > ? OR (weekly.score = ? AND weekly.at < (SELECT at FROM weekly WHERE week = ? AND player = ?)))`)
+        WHERE weekly.week = ? AND players.banned = 0 AND weekly.score > 0 AND (weekly.score > ? OR (weekly.score = ? AND weekly.at < (SELECT at FROM weekly WHERE week = ? AND player = ?)))`)
       .bind(week, score, score, week, id).first()
     : await env.DB.prepare(`SELECT COUNT(*) AS n FROM players
         WHERE banned = 0 AND best > 0 AND (best > ? OR (best = ? AND best_at < (SELECT best_at FROM players WHERE id = ?)))`)
@@ -171,17 +172,17 @@ async function board(url, env) {
   const week = weekKey(Date.now());
   const q = period === 'week'
     ? env.DB.prepare(`SELECT players.id, players.name, weekly.score FROM weekly JOIN players ON players.id = weekly.player
-        WHERE weekly.week = ? AND players.banned = 0 ORDER BY weekly.score DESC, weekly.at ASC LIMIT ?`).bind(week, limit)
+        WHERE weekly.week = ? AND players.banned = 0 AND weekly.score > 0 ORDER BY weekly.score DESC, weekly.at ASC LIMIT ?`).bind(week, limit)
     : env.DB.prepare(`SELECT id, name, best AS score FROM players WHERE banned = 0 AND best > 0 ORDER BY best DESC, best_at ASC LIMIT ?`).bind(limit);
   const total = period === 'week'
-    ? await env.DB.prepare('SELECT COUNT(*) AS n FROM weekly JOIN players ON players.id = weekly.player WHERE week = ? AND banned = 0').bind(week).first()
+    ? await env.DB.prepare('SELECT COUNT(*) AS n FROM weekly JOIN players ON players.id = weekly.player WHERE week = ? AND banned = 0 AND score > 0').bind(week).first()
     : await env.DB.prepare('SELECT COUNT(*) AS n FROM players WHERE banned = 0 AND best > 0').first();
   const { results } = await q.all();
   const top = results.map((r, i) => ({ rank: i + 1, name: r.name, score: r.score, me: r.id === me }));
   let mine = null;
   if (me && !top.some((r) => r.me)) {
     const row = period === 'week'
-      ? await env.DB.prepare('SELECT score FROM weekly WHERE week = ? AND player = ?').bind(week, me).first()
+      ? await env.DB.prepare('SELECT score FROM weekly WHERE week = ? AND player = ? AND score > 0').bind(week, me).first()
       : await env.DB.prepare('SELECT best AS score FROM players WHERE id = ? AND banned = 0 AND best > 0').bind(me).first();
     if (row) mine = { rank: await rankOf(env, period, row.score, me, week), score: row.score };
   }

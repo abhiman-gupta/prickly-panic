@@ -2111,7 +2111,7 @@
     if (state !== 'over') return;
     if (res.offline) $('rankLine').textContent = navigator.onLine === false ? 'Offline: this run isn\'t on the world board' : '';
     else if (res.ok) {
-      $('rankLine').textContent = `#${res.weekRank} this week / #${res.rank} all time` + (res.passed ? ` / passed ${res.passed} player${res.passed === 1 ? '' : 's'}!` : '');
+      $('rankLine').textContent = res.weekRank ? `#${res.weekRank} this week / #${res.rank} all time` + (res.passed ? ` / passed ${res.passed} player${res.passed === 1 ? '' : 's'}!` : '') : '';
     }
     updateNotify();
     if (lbTab !== 'session') loadBoard(lbTab, true);
@@ -2144,7 +2144,7 @@
     if (runs.length && !top.some((r) => r.n === lastRunN)) html += '<li class="gap">...</li>' + boardRow(sorted.findIndex((r) => r.n === lastRunN) + 1, playerName, runs[runs.length - 1].score, true);
     $('board').innerHTML = html;
     const totalS = runs.reduce((a, r) => a + (r.cleared ?? r.score), 0), totalT = runs.reduce((a, r) => a + (r.pears || 0), 0);
-    $('lbNote').textContent = `This visit: ${runs.length} run${runs.length === 1 ? '' : 's'} / ${totalS} plants / ${totalT} prickly pears`;
+    $('lbNote').textContent = `This visit: ${runs.length} run${runs.length === 1 ? '' : 's'} / ${totalS} plant${totalS === 1 ? '' : 's'} / ${totalT} prickly pear${totalT === 1 ? '' : 's'}`;
   }
   document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => loadBoard(b.dataset.tab)));
 
@@ -2196,7 +2196,7 @@
     const short = bestAtStart - score;
     $('nearBest').textContent = !isBest && bestAtStart > 0 && short >= 0 && short <= Math.max(3, Math.ceil(bestAtStart * 0.25))
       ? (short === 0 ? 'Tied your best! One more to beat it.' : `Just ${short + 1} more to beat your best!`) : '';
-    $('runLine').textContent = `${run.cleared} plants / ${run.close} close call${run.close === 1 ? '' : 's'} / ${pearsEaten} pear${pearsEaten === 1 ? '' : 's'}`;
+    $('runLine').textContent = `${run.cleared} plant${run.cleared === 1 ? "" : "s"} / ${run.close} close call${run.close === 1 ? '' : 's'} / ${pearsEaten} pear${pearsEaten === 1 ? '' : 's'}`;
     $('rankLine').textContent = '';
     if (lbTab === 'session') renderSession(); else { $('board').innerHTML = '<li class="gap msg">Loading...</li>'; $('lbNote').textContent = ''; }
     updateNotify();
