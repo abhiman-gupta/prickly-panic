@@ -67,6 +67,8 @@
       0 var(--u) 0 0 var(--ink);
   }
 
+  /* no sound button over the intro and title cards (it overlapped the card's corner) */
+  body:has(#intro:not([hidden])) #mute, body:has(#title:not([hidden])) #mute { display: none; }
   #mute {
     position: fixed; top: calc(var(--u) * 4); right: calc(var(--u) * 4); z-index: 5;
     width: calc(var(--u) * 15); height: calc(var(--u) * 13); border-radius: 0;
@@ -232,7 +234,7 @@
     <div class="install pix" data-install hidden>
       <span class="install-tag">FREE</span>
       <img src="icon-192.png" alt="" width="48" height="48">
-      <p class="install-text"><b>Get the app</b><span>One tap from your home screen. Plays offline.</span></p>
+      <p class="install-text"><b>Get the app</b><span>Open it in one tap from your home screen, and get pinged when someone beats your score.</span></p>
       <button class="btn install-btn">Install</button>
       <button class="install-close pix" aria-label="Not now">&times;</button>
     </div>
@@ -255,7 +257,7 @@
     <div class="install pix" data-install hidden>
       <span class="install-tag">FREE</span>
       <img src="icon-192.png" alt="" width="48" height="48">
-      <p class="install-text"><b>Get the app</b><span>One tap from your home screen. Plays offline.</span></p>
+      <p class="install-text"><b>Get the app</b><span>Open it in one tap from your home screen, and get pinged when someone beats your score.</span></p>
       <button class="btn install-btn">Install</button>
       <button class="install-close pix" aria-label="Not now">&times;</button>
     </div>
@@ -2256,13 +2258,14 @@
   // Chrome, Edge and Android hand us a real install prompt; iPhone and iPad have none, so there we show
   // the Share > Add to Home Screen steps instead. Hidden once installed, inside the app, or after the x.
   const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOS = !isAndroid && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   // The x only snoozes it for this visit; after three snoozes it stays away for good.
   let installEvt = null, installOff = local.get('waa.installHide', false), installLater = false;
   let installSnoozes = local.get('waa.installSnooze', 0);
   const installEls = [...document.querySelectorAll('[data-install]')];
   function updateInstall() {
-    const can = !(inApp || installOff || installLater) && !!(installEvt || isIOS);
+    const can = !(inApp || installOff || installLater) && !!(installEvt || isIOS || isAndroid);
     // on the title card, only for people who've already played (first-timers should just fly)
     installEls.forEach((el) => { el.hidden = !can || (!!el.closest('#title') && best <= 0 && !runs.length); });
   }
@@ -2270,9 +2273,20 @@
     if (forever) { installOff = true; local.set('waa.installHide', true); } else installLater = true;
     updateInstall();
   }
-  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; installLater = false; updateInstall(); });
+  const INSTALL_HTML = installEls[0].querySelector('.install-text').innerHTML;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); installEvt = e; installLater = false;
+    // a real one-tap prompt is available (Chrome, Edge, Samsung Internet): drop any manual steps we were showing
+    installEls.forEach((el) => { el.querySelector('.install-text').innerHTML = INSTALL_HTML; el.querySelector('.install-btn').textContent = 'Install'; });
+    updateInstall();
+  });
   window.addEventListener('appinstalled', () => { installEvt = null; hideInstall(true); });
-  const IOS_STEPS = '<b>Two taps to install</b><span>Tap <svg class="ios-share" viewBox="0 0 11 13" aria-label="Share"><path d="M5 0h1v1h1v1h1v1H7V2H6v6H5V2H4v1H3V2h1V1h1z M0 5h3v1H1v6h9V6H8V5h3v8H0z" fill="currentColor"/></svg> Share, then Add to Home Screen.</span>';
+  // no install prompt from the browser: walk them through it. New iPhone Safari hides Share behind the menu button left of the address.
+  const MENU_ICON = '<svg class="ios-share" viewBox="0 0 11 9" aria-label="menu"><path d="M0 0h11v1H0zM0 4h11v1H0zM0 8h11v1H0z" fill="currentColor"/></svg>';
+  const SHARE_ICON = '<svg class="ios-share" viewBox="0 0 11 13" aria-label="Share"><path d="M5 0h1v1h1v1h1v1H7V2H6v6H5V2H4v1H3V2h1V1h1z M0 5h3v1H1v6h9V6H8V5h3v8H0z" fill="currentColor"/></svg>';
+  const IOS_STEPS = `<b>Add to Home Screen</b><span>Tap ${MENU_ICON} left of the address bar, then ${SHARE_ICON} Share, then Add to Home Screen.</span>`;
+  const DOTS_ICON = '<svg class="ios-share" style="width:4px" viewBox="0 0 3 13" aria-label="menu"><path d="M0 0h3v3H0zM0 5h3v3H0zM0 10h3v3H0z" fill="currentColor"/></svg>';
+  const ANDROID_STEPS = `<b>Add to Home screen</b><span>Tap the ${DOTS_ICON} browser menu, then Install app or Add to Home screen.</span>`;
   for (const el of installEls) {
     const btn = el.querySelector('.install-btn');
     btn.addEventListener('click', async () => {
@@ -2280,7 +2294,7 @@
         const evt = installEvt; installEvt = null;
         try { await evt.prompt(); const { outcome } = await evt.userChoice; hideInstall(outcome === 'accepted'); } catch { hideInstall(false); }
       } else if (btn.textContent === 'Got it') hideInstall(false);
-      else { installEls.forEach((e) => { e.querySelector('.install-text').innerHTML = IOS_STEPS; e.querySelector('.install-btn').textContent = 'Got it'; }); }
+      else { installEls.forEach((e) => { e.querySelector('.install-text').innerHTML = isIOS ? IOS_STEPS : ANDROID_STEPS; e.querySelector('.install-btn').textContent = 'Got it'; }); }
     });
     el.querySelector('.install-close').addEventListener('click', () => {
       installSnoozes++; local.set('waa.installSnooze', installSnoozes);
@@ -2315,8 +2329,6 @@
   syncName();
   updateTitleBest();
   if (me && best > 0) api('GET', `/board?period=week&limit=1&player=${me.id}`).then((d) => updateTitleBest(d.top[0] && d.top[0].me ? 1 : d.me && d.me.rank)).catch(() => {});
-  // on iPhone, pings only work from the installed app, so say so where it counts
-  if (isIOS && !inApp) document.querySelectorAll('[data-install] .install-text span').forEach((s) => { s.textContent = 'Get pinged when someone beats your score. Plays offline.'; });
   // the intro greets every visit
   introEl.hidden = false; titleEl.hidden = true; requestAnimationFrame(introFrame);
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => drawIcon(cv, cv.dataset.icon));
