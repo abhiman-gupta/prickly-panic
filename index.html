@@ -140,7 +140,21 @@
   ol.board li { display: flex; gap: 8px; padding: 5px 4px; border-bottom: 2px dotted rgba(42, 26, 16, 0.25); font-size: 12px; align-items: baseline; }
   ol.board li.me { background: rgba(217, 100, 58, 0.16); }
   ol.board li.gap { justify-content: center; color: var(--ink-soft); border-bottom: 0; padding: 0; }
-  ol.board .rank { width: 18px; color: var(--ink-soft); }
+  ol.board .rank { width: 26px; color: var(--ink-soft); }
+  ol.board li.gap.msg { padding: 10px 4px; font-size: 12px; }
+  .tabs { display: flex; gap: 6px; margin: 16px 4px 0; }
+  .tabs button { flex: 1; font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 6px 2px; border: 0; cursor: pointer; background: var(--panel-2); color: var(--ink-soft); }
+  .tabs button.on { background: var(--ink); color: var(--panel); }
+  .lb-note { font-size: 11px; color: var(--ink-soft); margin-top: 6px; }
+  .rank-line { font-size: 14px; margin-top: 8px; color: var(--cactus-dark); font-weight: 700; }
+  .rank-line:empty { display: none; }
+  .install.notify { background: #bfe3ff; }
+  .install.notify canvas { flex: none; width: 40px; height: 40px; image-rendering: pixelated; }
+  .install.notify .btn { background: var(--cactus);
+    box-shadow:
+      calc(var(--u) * -1) 0 0 0 var(--ink), var(--u) 0 0 0 var(--ink),
+      0 calc(var(--u) * -1) 0 0 var(--ink), 0 var(--u) 0 0 var(--ink),
+      inset calc(var(--u) * -1) calc(var(--u) * -1) 0 0 var(--cactus-dark), inset var(--u) var(--u) 0 0 #6fae6a; }
   ol.board .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   ol.board .where { color: var(--ink-soft); font-size: 10px; }
   ol.board .pts { font-weight: 700; }
@@ -237,6 +251,7 @@
     <span class="badge pix" id="newBest" hidden>New best!</span>
     <p class="near-best" id="nearBest"></p>
     <p class="stats" id="runLine"></p>
+    <p class="rank-line" id="rankLine"></p>
     <div class="install pix" data-install hidden>
       <span class="install-tag">FREE</span>
       <img src="icon-192.png" alt="" width="48" height="48">
@@ -251,9 +266,19 @@
       <button class="btn secondary" id="share">Share</button>
     </div>
     <p class="hint">or tap anywhere / Space</p>
-    <h3>This session</h3>
+    <div class="install notify pix" id="notify" hidden>
+      <canvas data-icon="bell" data-size="40" aria-hidden="true"></canvas>
+      <p class="install-text" id="notifyText"><b>Defend your score</b><span>Get a ping when someone beats your best.</span></p>
+      <button class="btn" id="notifyBtn">Ping me</button>
+      <button class="install-close pix" id="notifyClose" aria-label="Not now">&times;</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="week" class="on" aria-selected="true">This week</button>
+      <button role="tab" data-tab="all" aria-selected="false">All time</button>
+      <button role="tab" data-tab="session" aria-selected="false">My runs</button>
+    </div>
     <ol class="board" id="board"></ol>
-    <p class="stats" id="stats"></p>
+    <p class="lb-note" id="lbNote"></p>
     <p class="fact pix"><b>Desert fact:</b> <span id="fact"></span></p>
     <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
@@ -715,6 +740,18 @@
     cactus: () => paint(16, 16, (g) => { g.capV(8, 1, 15, 5, '#4b8b52'); g.rect(3, 7, 4, 3, '#4b8b52'); g.capV(4, 3, 9, 3, '#4b8b52'); g.rect(10, 9, 3, 3, '#4b8b52'); g.capV(12, 5, 11, 3, '#4b8b52'); g.rect(7, 2, 1, 12, '#6fae6a'); }),
     sun: () => paint(16, 16, (g) => { g.ell(8, 8, 4.5, 4.5, '#ffb347'); g.ell(7, 7, 2, 2, '#ffe08a'); for (const [x, y] of [[8, 1], [8, 14], [1, 8], [14, 8], [3, 3], [12, 3], [3, 12], [12, 12]]) g.set(x, y, '#ff7a2e'); }, { outline: null }),
     pear: () => PEAR_SPR, // the same fruit you grab in game
+    bell: () => bitmap([
+      '....kk....',
+      '...kyyk...',
+      '..kyywyk..',
+      '..kyywyk..',
+      '.kyyyyyyk.',
+      '.kyyyyyyk.',
+      '.kyyyyyyk.',
+      'kyyyyyyyyk',
+      'kkkkkkkkkk',
+      '....kk....',
+    ], { k: '#2a1a10', y: '#ffd36b', w: '#fff6d8' }),
     // tiny footer link glyphs, in the card's soft ink
     web: () => bitmap([
       '...kkkkk...',
@@ -919,7 +956,7 @@
     audio();
     if (!introEl.hidden) { closeIntro(); return; }
     if (paused) { paused = false; return; }
-    if (state === 'ready') { state = 'play'; flap(); }
+    if (state === 'ready') { state = 'play'; flap(); startTicket(); }
     else if (state === 'play') flap();
     else if (state === 'title') { if (!needName()) toReady(); }
     else if (state === 'over' && performance.now() - overAt > 650) { if (!needName()) toReady(); }
@@ -943,6 +980,7 @@
     const isBest = score > best;
     if (isBest) { best = score; local.set('waa.best', best); }
     showOver(isBest);
+    submitRun({ score, cleared: run.cleared, close: run.close, name: playerName }).then(showRank);
   }
 
   // =====================================================================
@@ -1907,7 +1945,7 @@
     const cols = canvas.width / N;
     for (const p of popups) { ctx.globalAlpha = clamp(p.life * 4, 0, 1); ptext(p.text, LX(p.x), LY(p.y), p.mult || 1, p.col || '#ffe08a'); ctx.globalAlpha = 1; }
     if (state === 'ready') {
-      ptext('TAP TO FLAP!', cols / 2, LY(400), inkBox('TAP TO FLAP!', 2).w / N <= cols - 10 ? 2 : 1);
+      ptext('TAP TO FLY!', cols / 2, LY(400), inkBox('TAP TO FLY!', 2).w / N <= cols - 10 ? 2 : 1);
       ptext('too hot up here', cols / 2, LY(HEAT_LINE - 22), 1, '#ffd2a8');
     }
     if (state === 'play' || state === 'dying') {
@@ -2031,7 +2069,111 @@
     return true;
   }
 
-  function updateTitleBest() { $('titleBest').textContent = best > 0 ? `Your best: ${best}` : ''; updateInstall(); }
+  function updateTitleBest(weekRank) {
+    $('titleBest').textContent = best > 0 ? `Your best: ${best}${weekRank ? ` / #${weekRank} this week` : ''}` : '';
+    updateInstall();
+  }
+
+  // =====================================================================
+  // world leaderboard + "someone beat your score" pings (Cloudflare Worker in api/)
+  // =====================================================================
+  const API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:8787' : 'https://prickly-panic-api.abhi270702.workers.dev';
+  let me = local.get('waa.player', null);   // {id, key}: this device's identity on the board
+  let runTicket = null, lbTab = 'week';
+  const lbCache = {};
+  async function api(method, path, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (me) { headers['X-Player'] = me.id; headers['X-Key'] = me.key; }
+    const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401 && me) { me = null; local.set('waa.player', null); } // identity no longer valid: start fresh next time
+      if (!res.ok) throw Object.assign(new Error(data.error || String(res.status)), { status: res.status });
+      return data;
+    } finally { clearTimeout(t); }
+  }
+  async function ensurePlayer() {
+    if (me && me.id && me.key) return me;
+    const p = await api('POST', '/player', { name: playerName });
+    me = { id: p.id, key: p.key }; local.set('waa.player', me);
+    return me;
+  }
+  // a run gets a ticket from the server when it starts; the score is only accepted against that ticket
+  function startTicket() { runTicket = ensurePlayer().then(() => api('POST', '/run')).then((r) => r.run).catch(() => null); }
+  async function submitRun(snap) {
+    const ticket = runTicket ? await runTicket : null;
+    runTicket = null;
+    if (!ticket) return { offline: true };
+    try { return await api('POST', '/score', { run: ticket, ...snap }); } catch { return { offline: true }; }
+  }
+  function showRank(res) {
+    if (state !== 'over') return;
+    if (res.offline) $('rankLine').textContent = navigator.onLine === false ? 'Offline: this run isn\'t on the world board' : '';
+    else if (res.ok) {
+      $('rankLine').textContent = `#${res.weekRank} this week / #${res.rank} all time` + (res.passed ? ` / passed ${res.passed} player${res.passed === 1 ? '' : 's'}!` : '');
+    }
+    updateNotify();
+    if (lbTab !== 'session') loadBoard(lbTab, true);
+  }
+  async function loadBoard(tab = lbTab, fresh = false) {
+    lbTab = tab;
+    document.querySelectorAll('.tabs button').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    if (tab === 'session') return renderSession();
+    if (lbCache[tab] && !fresh) renderWorld(lbCache[tab]);
+    else if (!lbCache[tab]) { $('board').innerHTML = '<li class="gap msg">Loading...</li>'; $('lbNote').textContent = ''; }
+    try {
+      const d = await api('GET', `/board?period=${tab}&limit=10${me ? `&player=${me.id}` : ''}`);
+      lbCache[tab] = d;
+      if (lbTab === tab) renderWorld(d);
+    } catch {
+      if (lbTab === tab && !lbCache[tab]) { $('board').innerHTML = '<li class="gap msg">Can\'t reach the world board</li>'; $('lbNote').textContent = 'Check your connection. "My runs" still works offline.'; }
+    }
+  }
+  const boardRow = (rank, name, pts, mine) => `<li class="${mine ? 'me' : ''}"><span class="rank">${rank}</span><span class="who">${escapeHtml(name || 'Wren')}</span><span class="pts">${pts}</span></li>`;
+  function renderWorld(d) {
+    let html = d.top.map((r) => boardRow(r.rank, r.name, r.score, r.me)).join('') || '<li class="gap msg">No scores yet. Be the first!</li>';
+    if (d.me) html += '<li class="gap">...</li>' + boardRow(d.me.rank, playerName, d.me.score, true);
+    $('board').innerHTML = html;
+    const n = `${d.total} player${d.total === 1 ? '' : 's'}`;
+    $('lbNote').textContent = d.period === 'week' ? `${n} this week / new board every Monday` : `${n} all time`;
+  }
+  function renderSession() {
+    const sorted = [...runs].sort((a, b) => b.score - a.score || a.n - b.n), top = sorted.slice(0, 5);
+    let html = top.map((r, i) => boardRow(i + 1, r.name, r.score, r.n === lastRunN)).join('') || '<li class="gap msg">No runs yet</li>';
+    if (runs.length && !top.some((r) => r.n === lastRunN)) html += '<li class="gap">...</li>' + boardRow(sorted.findIndex((r) => r.n === lastRunN) + 1, playerName, runs[runs.length - 1].score, true);
+    $('board').innerHTML = html;
+    const totalS = runs.reduce((a, r) => a + (r.cleared ?? r.score), 0), totalT = runs.reduce((a, r) => a + (r.pears || 0), 0);
+    $('lbNote').textContent = `This visit: ${runs.length} run${runs.length === 1 ? '' : 's'} / ${totalS} plants / ${totalT} prickly pears`;
+  }
+  document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => loadBoard(b.dataset.tab)));
+
+  // ---- pings: web push when someone passes your best (needs the installed app on iPhone) ----
+  const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol !== 'file:';
+  let pushOn = local.get('waa.pushOn', false), notifyLater = false;
+  function updateNotify() {
+    $('notify').hidden = !pushOK || pushOn || notifyLater || !me || best <= 0 || Notification.permission === 'denied';
+  }
+  const b64uBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  $('notifyBtn').addEventListener('click', async () => {
+    const say = (h) => { $('notifyText').innerHTML = h; };
+    try {
+      if (await Notification.requestPermission() !== 'granted') { say('<b>Pings are off</b><span>You can allow them in your browser settings.</span>'); return; }
+      await ensurePlayer();
+      const { vapid } = await api('GET', '/config');
+      const reg = await navigator.serviceWorker.ready;
+      const key = b64uBytes(vapid);
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && sub.options && sub.options.applicationServerKey && new Uint8Array(sub.options.applicationServerKey).join() !== key.join()) { await sub.unsubscribe(); sub = null; }
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      await api('POST', '/push', { subscription: sub.toJSON() });
+      pushOn = true; local.set('waa.pushOn', true);
+      say('<b>You\'re on!</b><span>We\'ll ping you if someone beats your best.</span>');
+      $('notifyBtn').hidden = true;
+      setTimeout(updateNotify, 2500);
+    } catch { say('<b>Couldn\'t turn on pings</b><span>Try again in a bit.</span>'); }
+  });
+  $('notifyClose').addEventListener('click', () => { notifyLater = true; updateNotify(); });
 
   // pick a fact about something in the scene: what got you first, then whatever else was around
   function sceneFact() {
@@ -2055,14 +2197,9 @@
     $('nearBest').textContent = !isBest && bestAtStart > 0 && short >= 0 && short <= Math.max(3, Math.ceil(bestAtStart * 0.25))
       ? (short === 0 ? 'Tied your best! One more to beat it.' : `Just ${short + 1} more to beat your best!`) : '';
     $('runLine').textContent = `${run.cleared} plants / ${run.close} close call${run.close === 1 ? '' : 's'} / ${pearsEaten} pear${pearsEaten === 1 ? '' : 's'}`;
-    const sorted = [...runs].sort((a, b) => b.score - a.score || a.n - b.n);
-    const top = sorted.slice(0, 5);
-    const row = (r, rank) => `<li class="${r.n === lastRunN ? 'me' : ''}"><span class="rank">${rank}</span><span class="who">${escapeHtml(r.name || 'Wren')}</span><span class="pts">${r.score}</span></li>`;
-    let html = top.map((r, i) => row(r, i + 1)).join('');
-    if (!top.some((r) => r.n === lastRunN)) html += '<li class="gap">...</li>' + row(runs[runs.length - 1], sorted.findIndex((r) => r.n === lastRunN) + 1);
-    $('board').innerHTML = html;
-    const totalS = runs.reduce((a, r) => a + (r.cleared ?? r.score), 0), totalT = runs.reduce((a, r) => a + (r.pears || 0), 0);
-    $('stats').textContent = `${runs.length} run${runs.length === 1 ? '' : 's'} / ${totalS} plants cleared / ${totalT} prickly pears`;
+    $('rankLine').textContent = '';
+    if (lbTab === 'session') renderSession(); else { $('board').innerHTML = '<li class="gap msg">Loading...</li>'; $('lbNote').textContent = ''; }
+    updateNotify();
     $('fact').textContent = sceneFact();
     $('share').textContent = 'Share';
     syncName();
@@ -2177,6 +2314,9 @@
   setMute(muted);
   syncName();
   updateTitleBest();
+  if (me && best > 0) api('GET', `/board?period=week&limit=1&player=${me.id}`).then((d) => updateTitleBest(d.top[0] && d.top[0].me ? 1 : d.me && d.me.rank)).catch(() => {});
+  // on iPhone, pings only work from the installed app, so say so where it counts
+  if (isIOS && !inApp) document.querySelectorAll('[data-install] .install-text span').forEach((s) => { s.textContent = 'Get pinged when someone beats your score. Plays offline.'; });
   // the intro greets every visit
   introEl.hidden = false; titleEl.hidden = true; requestAnimationFrame(introFrame);
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => drawIcon(cv, cv.dataset.icon));

@@ -1,0 +1,23 @@
+name = "prickly-panic-api"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+account_id = "5e8f9f0609baee1aa46b39fb62c2f3ae"
+workers_dev = true
+preview_urls = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "prickly-panic"
+database_id = "367ec16e-dbab-4166-a9b3-3031b0ead81f"
+
+[vars]
+# where the game is served from (CORS)
+ALLOWED_ORIGINS = "https://pricklypanic.abhimangupta.com,http://localhost:8137"
+# public half of the VAPID key pair (the private half is the VAPID_PRIVATE_JWK secret)
+VAPID_PUBLIC = "BNJpcOo_4tgKdIM0q1-cS9GWF1EwWODMWR21YT1D5qFfBOiktdgBfMvimgPD8msxlJSvnpCSADm9mPVIawGNScM"
+VAPID_SUBJECT = "https://pricklypanic.abhimangupta.com"
+
+# Secrets (set with `npx wrangler secret put NAME`, never committed):
+#   PLAYER_SECRET     random string, signs player keys
+#   ADMIN_TOKEN       random string, for removing bad scores
+#   VAPID_PRIVATE_JWK private VAPID key as JSON (made by scripts/setup-keys.mjs)

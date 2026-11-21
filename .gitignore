@@ -1,0 +1,5 @@
+.DS_Store
+api/node_modules/
+api/.wrangler/
+api/.dev.vars
+api/secrets.local.json

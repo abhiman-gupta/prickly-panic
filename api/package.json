@@ -1,0 +1,16 @@
+{
+  "name": "prickly-panic-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "keys": "node scripts/setup-keys.mjs",
+    "db:local": "wrangler d1 execute prickly-panic --local --file=schema.sql",
+    "db:remote": "wrangler d1 execute prickly-panic --remote --file=schema.sql",
+    "dev": "wrangler dev --port 8787",
+    "secrets": "wrangler secret bulk secrets.local.json",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.166.0"
+  }
+}
