@@ -63,8 +63,10 @@ async function route(req, env, ctx) {
 // ---------------------------------------------------------------- players
 async function newPlayer(req, env) {
   const body = await readJson(req);
+  const name = cleanName(body.name);
+  if (!name) throw httpErr(400, 'nickname required');
   const id = crypto.randomUUID();
-  await env.DB.prepare('INSERT INTO players (id, name, created) VALUES (?, ?, ?)').bind(id, cleanName(body.name), Date.now()).run();
+  await env.DB.prepare('INSERT INTO players (id, name, created) VALUES (?, ?, ?)').bind(id, name, Date.now()).run();
   return json({ id, key: await playerKey(env, id) });
 }
 
@@ -105,7 +107,7 @@ async function submitScore(req, env, ctx) {
     .bind(now, score, cleared, close, reason || null, run.id).run();
   if (reason) return json({ ok: false, reason });
 
-  const name = cleanName(b.name ?? player.name);
+  const name = cleanName(b.name) || player.name; // a blank name never overwrites the player's nickname
   const prevBest = player.best;
   const week = weekKey(now);
   const stmts = [env.DB.prepare('UPDATE players SET name = ? WHERE id = ?').bind(name, player.id)];
@@ -236,7 +238,7 @@ function weekKey(now) {
 }
 function cleanName(s) {
   const n = String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
-  return n || 'Wren';
+  return n; // no default name: players always pick their own nickname
 }
 async function playerKey(env, id) {
   if (!env.PLAYER_SECRET) throw new Error('PLAYER_SECRET not set');

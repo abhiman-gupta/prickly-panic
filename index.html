@@ -2181,7 +2181,7 @@
       if (lbTab === tab && !lbCache[tab]) { $('board').innerHTML = '<li class="gap msg">Can\'t reach the world board</li>'; $('lbNote').textContent = 'Check your connection. "My runs" still works offline.'; }
     }
   }
-  const boardRow = (rank, name, pts, mine) => `<li class="${mine ? 'me' : ''}"><span class="rank">${rank}</span><span class="who">${escapeHtml(name || 'Wren')}</span><span class="pts">${pts}</span></li>`;
+  const boardRow = (rank, name, pts, mine) => `<li class="${mine ? 'me' : ''}"><span class="rank">${rank}</span><span class="who">${escapeHtml(name || '')}</span><span class="pts">${pts}</span></li>`;
   function renderWorld(d) {
     let html = d.top.map((r) => boardRow(r.rank, r.name, r.score, r.me)).join('') || '<li class="gap msg">No scores yet. Be the first!</li>';
     if (d.me) html += '<li class="gap">...</li>' + boardRow(d.me.rank, playerName, d.me.score, true);
@@ -2192,7 +2192,7 @@
   function renderSession() {
     const sorted = [...runs].sort((a, b) => b.score - a.score || a.n - b.n), top = sorted.slice(0, 5);
     let html = top.map((r, i) => boardRow(i + 1, r.name, r.score, r.n === lastRunN)).join('') || '<li class="gap msg">No runs yet</li>';
-    if (runs.length && !top.some((r) => r.n === lastRunN)) html += '<li class="gap">...</li>' + boardRow(sorted.findIndex((r) => r.n === lastRunN) + 1, playerName, runs[runs.length - 1].score, true);
+    if (runs.length && !top.some((r) => r.n === lastRunN)) html += '<li class="gap">...</li>' + boardRow(sorted.findIndex((r) => r.n === lastRunN) + 1, runs[runs.length - 1].name, runs[runs.length - 1].score, true);
     $('board').innerHTML = html;
     const totalS = runs.reduce((a, r) => a + (r.cleared ?? r.score), 0), totalT = runs.reduce((a, r) => a + (r.pears || 0), 0);
     $('lbNote').textContent = `This visit: ${runs.length} run${runs.length === 1 ? '' : 's'} / ${totalS} plant${totalS === 1 ? '' : 's'} / ${totalT} prickly pear${totalT === 1 ? '' : 's'}`;

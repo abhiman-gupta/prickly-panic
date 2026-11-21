@@ -3,7 +3,7 @@
 -- one row per device; `best` is the all-time best
 CREATE TABLE IF NOT EXISTS players (
   id TEXT PRIMARY KEY,
-  name TEXT NOT NULL DEFAULT 'Wren',
+  name TEXT NOT NULL,
   created INTEGER NOT NULL,
   best INTEGER NOT NULL DEFAULT 0,
   best_at INTEGER,
