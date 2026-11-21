@@ -435,7 +435,9 @@
   const sess = makeStore('sessionStorage');
   let best = local.get('waa.best', 0);
   let muted = local.get('waa.muted', false);
-  let playerName = String(local.get('waa.name', local.get('fwf.name', ''))).trim().slice(0, 12); // no default: the player types one
+  // the leaderboard's own name cleanup (cleanName in api/src/index.js), so a name it would empty out, like "<>", counts as no name here too
+  const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
+  let playerName = cleanName(local.get('waa.name', local.get('fwf.name', ''))); // no default: the player types one
   let runs = sess.get('waa.runs', []);
   let lastRunN = 0;
   let lastFact = -1;
@@ -989,7 +991,7 @@
   let startStage = 0; // each run starts somewhere random along the journey
   let stageIdx = 0, regionFrom = 'tucson', regionTo = 'tucson', regionT = 1, seasonT = 1;
   let banner = null;
-  let lightning = 0, nextLightning = 4, bolt = null;
+  let lightning = 0, nextLightning = 4, bolt = null, rainAcc = 0; // rainAcc: the part of a raindrop or snowflake owed since the last tick
   const bird = { x: 120, y: 300, vy: 0, rot: 0, flapT: 1 };
   let obstacles = [], pears = [], hawks = [], particles = [], popups = [], bgObjs = [], clouds = [], rain = [], nextBg = 0;
 
@@ -1478,8 +1480,10 @@
   function updateWeather(dt) {
     const s = season();
     if (s === 'monsoon' || s === 'winter') {
-      const rate = (s === 'monsoon' ? 220 : 40) * seasonT;
-      for (let i = 0; i < rate * dt; i++) rain.push({ x: rand(0, lo.width + 40), y: -5, s });
+      // drops per second, fading in with the season. A tick is 1/120 s, so carry the fraction over: snow comes
+      // less than once a tick, and rounding up made it 120 a second, so the 900 cap kept it off the lower screen
+      rainAcc += (s === 'monsoon' ? 220 : 40) * seasonT * dt;
+      for (; rainAcc >= 1; rainAcc--) rain.push({ x: rand(0, lo.width + 40), y: -5, s });
     }
     for (const r of rain) {
       if (r.s === 'monsoon') { r.x -= 50 * dt; r.y += 260 * dt; }
@@ -1639,10 +1643,16 @@
         if (hk.x > bird.x + 20) hk.y += clamp(bird.y - hk.y, -1, 1) * 38 * dt;
         const hitBody = Math.hypot(hk.x + 4 * P - bird.x, hk.y - bird.y) < BR + 16;
         const hitHead = Math.hypot(hk.x - 12 * P - bird.x, hk.y - 2 * P - bird.y) < BR + 8;
-        if (invincible <= 0 && (hitBody || hitHead)) return die('hawk');
+        if (hitBody || hitHead) {
+          if (invincible <= 0) return die('hawk');
+          hk.ghost = true; // it flew right through you while you were powered up: that's no dodge
+        }
         if (!hk.dodged && hk.x < bird.x - 30) {
-          hk.dodged = true; run.hawks++; sfx.dodge();
-          popups.push({ x: bird.x + 10, y: bird.y - 30, text: 'DODGED!', life: 0.9, col: '#cfe6ff' });
+          hk.dodged = true;
+          if (!hk.ghost) {
+            run.hawks++; sfx.dodge();
+            popups.push({ x: bird.x + 10, y: bird.y - 30, text: 'DODGED!', life: 0.9, col: '#cfe6ff' });
+          }
         }
       }
     }
@@ -2133,7 +2143,7 @@
 
   function syncName() { nameInputs.forEach((i) => { if (document.activeElement !== i) i.value = playerName; }); }
   nameInputs.forEach((inp) => inp.addEventListener('input', () => {
-    playerName = inp.value.trim().slice(0, 12);
+    playerName = cleanName(inp.value);
     local.set('waa.name', playerName);
     if (playerName) nameInputs.forEach((i) => { i.classList.remove('need'); $(i.id + 'Need').hidden = true; });
     syncName();
@@ -2143,6 +2153,7 @@
     if (playerName) return false;
     const inp = overEl.hidden ? $('nameTitle') : $('nameOver');
     inp.classList.remove('need'); void inp.offsetWidth; inp.classList.add('need'); // restart the shake
+    $(inp.id + 'Need').textContent = inp.value.trim() ? 'Names can\'t be just < or >' : 'Type a nickname to fly'; // typed, but nothing the board keeps
     $(inp.id + 'Need').hidden = false;
     inp.focus({ preventScroll: true });
     inp.scrollIntoView({ block: 'nearest' });
@@ -2177,13 +2188,14 @@
     if (me && me.id && me.key) return me;
     const p = await api('POST', '/player', { name: playerName });
     me = { id: p.id, key: p.key }; local.set('waa.player', me);
+    syncPush(); // a new identity (first run, or the old one stopped working): hand it this device's pings, if they're on
     return me;
   }
   // a run gets a ticket from the server when it starts; the score is only accepted against that ticket
   function startTicket() { runTicket = ensurePlayer().then(() => api('POST', '/run')).then((r) => r.run).catch(() => null); }
   async function submitRun(snap) {
-    const ticket = runTicket ? await runTicket : null;
-    runTicket = null;
+    const pending = runTicket; runTicket = null; // claim this run's ticket before waiting on it, so a run started meanwhile keeps its own
+    const ticket = pending ? await pending : null;
     if (!ticket) return { offline: true };
     try { return await api('POST', '/score', { run: ticket, ...snap }); } catch { return { offline: true }; }
   }
@@ -2207,7 +2219,10 @@
       lbCache[tab] = d;
       if (lbTab === tab) renderWorld(d);
     } catch {
-      if (lbTab === tab && !lbCache[tab]) { $('board').innerHTML = '<li class="gap msg">Can\'t reach the world board</li>'; $('lbNote').textContent = 'Check your connection. "My runs" still works offline.'; }
+      if (lbTab !== tab) return;
+      // couldn't refresh: show the last board we got (game over swapped it for "Loading..."), or say we can't reach it
+      if (lbCache[tab]) { renderWorld(lbCache[tab]); $('lbNote').textContent = 'Couldn\'t refresh. Showing the last board loaded.'; }
+      else { $('board').innerHTML = '<li class="gap msg">Can\'t reach the world board</li>'; $('lbNote').textContent = 'Check your connection. "My runs" still works offline.'; }
     }
   }
   const boardRow = (rank, name, pts, mine) => `<li class="${mine ? 'me' : ''}"><span class="rank">${rank}</span><span class="who">${escapeHtml(name || '')}</span><span class="pts">${pts}</span></li>`;
@@ -2235,6 +2250,29 @@
     $('notify').hidden = !pushOK || pushOn || notifyLater || !me || best <= 0 || Notification.permission === 'denied';
   }
   const b64uBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  // this browser's push subscription, unless it was made with an old VAPID key (then it's dropped)
+  async function pushSub(reg, key) {
+    const sub = await reg.pushManager.getSubscription();
+    const k = sub && sub.options && sub.options.applicationServerKey;
+    if (k && new Uint8Array(k).join() !== key.join()) { await sub.unsubscribe(); return null; }
+    return sub;
+  }
+  // "pings on" is only remembered on this device, so check it against the real thing each visit and for each new
+  // identity: the server drops a subscription that expired, a new identity has none, and the browser can lose one or
+  // keep one made with an old key. Re-send the live one, or bring the "Ping me" offer back if it's gone.
+  async function syncPush() {
+    if (!pushOK || !pushOn || !me) return;
+    try {
+      let sub = null;
+      if (Notification.permission === 'granted') {
+        const { vapid } = await api('GET', '/config');
+        if (!vapid) return;
+        sub = await pushSub(await navigator.serviceWorker.ready, b64uBytes(vapid));
+      }
+      if (sub) await api('POST', '/push', { subscription: sub.toJSON() });
+      else { pushOn = false; local.set('waa.pushOn', false); }
+    } catch { /* offline: check again next visit */ }
+  }
   $('notifyBtn').addEventListener('click', async () => {
     const say = (h) => { $('notifyText').innerHTML = h; };
     try {
@@ -2243,9 +2281,7 @@
       const { vapid } = await api('GET', '/config');
       const reg = await navigator.serviceWorker.ready;
       const key = b64uBytes(vapid);
-      let sub = await reg.pushManager.getSubscription();
-      if (sub && sub.options && sub.options.applicationServerKey && new Uint8Array(sub.options.applicationServerKey).join() !== key.join()) { await sub.unsubscribe(); sub = null; }
-      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      const sub = (await pushSub(reg, key)) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
       await api('POST', '/push', { subscription: sub.toJSON() });
       pushOn = true; local.set('waa.pushOn', true);
       say('<b>You\'re on!</b><span>We\'ll ping you if someone beats your best.</span>');
@@ -2444,10 +2480,10 @@
   }
 
   muteBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
-  muteBtn.addEventListener('click', (e) => {
-    setMute(!muted);
-    if (e.detail > 0) muteBtn.blur();
-  });
+  muteBtn.addEventListener('click', () => setMute(!muted));
+  // a button or link clicked with the mouse or a tap hands its focus back, so Space and Enter go on flapping and
+  // starting runs instead of clicking it again (keyboard users keep their focus: a click from a key has detail 0)
+  document.addEventListener('click', (e) => { const el = e.target.closest && e.target.closest('button, a[href]'); if (el && e.detail > 0) el.blur(); });
 
   window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') { e.target.blur(); if (playerName) press(); } return; }
@@ -2470,6 +2506,7 @@
   syncName();
   updateTitleBest();
   if (me && best > 0) api('GET', `/board?period=week&limit=1&player=${me.id}`).then((d) => updateTitleBest(d.top[0] && d.top[0].me ? 1 : d.me && d.me.rank)).catch(() => {});
+  syncPush();
   // the intro greets every visit
   introEl.hidden = false; titleEl.hidden = true; requestAnimationFrame(introFrame);
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => drawIcon(cv, cv.dataset.icon));

@@ -29,7 +29,8 @@ when you change icons or other cached files.
 ## Notes
 
 - All scenery, sprites and sound effects are drawn and synthesized in code inside `index.html`.
-- Scores and your player name are stored only in your own browser.
+- Your best, settings and run history stay in your browser. The world leaderboard (the Cloudflare Worker in `api/`)
+  keeps your nickname, a random player ID and each run's score, plus your push subscription if you turn on pings.
 - Font: Silkscreen by Jason Kottke (SIL Open Font License), loaded from Google Fonts.
 - Add `?debug` to the URL to expose test hooks on `window.__waa`.
 - The game was first called Wren in Arizona, then Southwest Skies; browser storage keys keep the old `waa.` prefix so saved bests and names carry over.

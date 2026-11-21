@@ -184,7 +184,8 @@ async function board(url, env) {
   let mine = null;
   if (me && !top.some((r) => r.me)) {
     const row = period === 'week'
-      ? await env.DB.prepare('SELECT score FROM weekly WHERE week = ? AND player = ? AND score > 0').bind(week, me).first()
+      ? await env.DB.prepare(`SELECT weekly.score FROM weekly JOIN players ON players.id = weekly.player
+          WHERE weekly.week = ? AND weekly.player = ? AND weekly.score > 0 AND players.banned = 0`).bind(week, me).first()
       : await env.DB.prepare('SELECT best AS score FROM players WHERE id = ? AND banned = 0 AND best > 0').bind(me).first();
     if (row) mine = { rank: await rankOf(env, period, row.score, me, week), score: row.score };
   }
