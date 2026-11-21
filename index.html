@@ -71,6 +71,8 @@
 
   /* no sound button over the intro and title cards (it overlapped the card's corner) */
   body:has(#intro:not([hidden])) #mute, body:has(#title:not([hidden])) #mute { display: none; }
+  /* on a phone the game-over card would sit under the sound button (and its scrolled content, like the × on Get the app, too) */
+  @media (max-width: 560px) { #over { padding-top: calc(var(--u) * 17 + 8px); } }
   #mute {
     position: fixed; top: calc(var(--u) * 4); right: calc(var(--u) * 4); z-index: 5;
     width: calc(var(--u) * 15); height: calc(var(--u) * 13); border-radius: 0;
@@ -80,7 +82,8 @@
   #mute canvas { width: calc(var(--u) * 11); height: calc(var(--u) * 9); }
 
   .overlay {
-    position: fixed; inset: 0; z-index: 4;
+    /* sized to the visible area, so with the iPhone keyboard up the card fits above it and can scroll the nickname into view */
+    position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100%); z-index: 4;
     display: flex; align-items: center; justify-content: center;
     padding: 20px;
   }
@@ -124,7 +127,10 @@
     font: inherit; font-size: 14px; color: var(--ink);
     width: 140px; padding: 5px 8px; border: 0; background: #fff;
     -webkit-user-select: text; user-select: text; outline: none;
+    -webkit-appearance: none; appearance: none; border-radius: 0;
   }
+  /* type="search" only so Safari doesn't offer to AutoFill a contact's real name; keep it looking like a plain box */
+  .name-row input::-webkit-search-cancel-button, .name-row input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
   .name-row input::placeholder { color: #b8a58c; }
   /* asked to fly without a nickname: the field turns red and gives a little shake */
   .name-row input.need { background: #ffe1d6; animation: nudge 0.3s steps(2) 2; }
@@ -188,6 +194,7 @@
   .install-tag { position: absolute; top: -9px; left: 10px; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; letter-spacing: 1px; }
   .install-close { position: absolute; top: -10px; right: -10px; width: 22px; height: 22px; font: inherit; font-size: 13px; line-height: 1; background: var(--panel); border: 0; color: var(--ink-soft); cursor: pointer; padding: 0; }
   .install-close:hover, .install-close:focus-visible { color: var(--accent); }
+  .install-close::before { content: ''; position: absolute; inset: -11px; } /* 44px to tap, though it looks 22px */
   /* install guide: soft and friendly, plain readable text (not the pixel font) so anyone can follow it */
   #guide { z-index: 6; background: rgba(29, 18, 54, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); align-items: flex-start; padding-top: max(16px, env(safe-area-inset-top)); }
   #guide.arrow-top { padding-top: 84px; }
@@ -280,7 +287,7 @@
       <li><canvas data-icon="pear" width="16" height="16"></canvas><span>Eat prickly pear = 10 SEC invincibility</span></li>
       <li><canvas data-icon="hawk" width="16" height="16"></canvas><span>Dodge the Cooper's hawk</span></li>
     </ul>
-    <label class="name-row">Nickname <input id="nameTitle" class="pix" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Your name" aria-describedby="nameTitleNeed"></label>
+    <label class="name-row">Nickname <input id="nameTitle" class="pix" type="search" enterkeyhint="go" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Your name" aria-describedby="nameTitleNeed"></label>
     <p class="name-need" id="nameTitleNeed" hidden>Type a nickname to fly</p>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
@@ -319,7 +326,7 @@
       <button class="btn install-btn">Install</button>
       <button class="install-close pix" aria-label="Not now">&times;</button>
     </div>
-    <label class="name-row">Nickname <input id="nameOver" class="pix" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Your name" aria-describedby="nameOverNeed"></label>
+    <label class="name-row">Nickname <input id="nameOver" class="pix" type="search" enterkeyhint="go" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Your name" aria-describedby="nameOverNeed"></label>
     <p class="name-need" id="nameOverNeed" hidden>Type a nickname to fly</p>
     <div class="btns">
       <button class="btn" id="again">Fly again</button>
@@ -2184,6 +2191,23 @@
   const $ = (id) => document.getElementById(id);
   const nameInputs = [$('nameTitle'), $('nameOver')];
 
+  // the iPhone keyboard shrinks the visual viewport but not fixed elements: size the overlays to what's visible,
+  // then bring the nickname (and the "Type a nickname" line under it) into view above the keyboard
+  const vv = window.visualViewport;
+  function fitViewport() {
+    if (!vv) return;
+    const r = document.documentElement.style;
+    r.setProperty('--vv-top', `${vv.offsetTop}px`); r.setProperty('--vv-h', `${vv.height}px`);
+    const a = document.activeElement;
+    if (nameInputs.includes(a)) requestAnimationFrame(() => centerInCard(a));
+  }
+  // scroll only the card (scrollIntoView would also nudge the page behind it)
+  function centerInCard(el) {
+    const card = el.closest('.card'); if (!card) return;
+    const c = card.getBoundingClientRect(), e = el.getBoundingClientRect();
+    card.scrollTop += (e.top + e.height / 2) - (c.top + c.height / 2) + 12; // a little low, so the line under it shows too
+  }
+  if (vv) { vv.addEventListener('resize', fitViewport); vv.addEventListener('scroll', fitViewport); }
   function syncName() { nameInputs.forEach((i) => { if (document.activeElement !== i) i.value = playerName; }); }
   nameInputs.forEach((inp) => inp.addEventListener('input', () => {
     playerName = cleanName(inp.value);
@@ -2199,7 +2223,7 @@
     $(inp.id + 'Need').textContent = inp.value.trim() ? 'Names can\'t be just < or >' : 'Type a nickname to fly'; // typed, but nothing the board keeps
     $(inp.id + 'Need').hidden = false;
     inp.focus({ preventScroll: true });
-    inp.scrollIntoView({ block: 'nearest' });
+    centerInCard(inp);
     return true;
   }
 
