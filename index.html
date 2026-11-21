@@ -270,13 +270,6 @@
     <p class="name-need" id="nameTitleNeed" hidden>Type a nickname to fly</p>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
-    <div class="install pix" data-install hidden>
-      <span class="install-tag">FREE</span>
-      <img src="icon-192.png" alt="" width="48" height="48">
-      <p class="install-text"><b>Get the app</b><span>Open it in one tap from your home screen, and get pinged when someone beats your score.</span></p>
-      <button class="btn install-btn">Install</button>
-      <button class="install-close pix" aria-label="Not now">&times;</button>
-    </div>
     <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
 </div>
@@ -2320,8 +2313,8 @@
   const installEls = [...document.querySelectorAll('[data-install]')];
   function updateInstall() {
     const can = !(inApp || installOff || installLater) && !!(installEvt || isIOS || isAndroid);
-    // on the title card, only for people who've already played (first-timers should just fly)
-    installEls.forEach((el) => { el.hidden = !can || (!!el.closest('#title') && best <= 0 && !runs.length); });
+    // only on the game-over card: nobody is asked to install before they've played a run
+    installEls.forEach((el) => { el.hidden = !can; });
   }
   function hideInstall(forever) {
     if (forever) { installOff = true; local.set('waa.installHide', true); } else installLater = true;
