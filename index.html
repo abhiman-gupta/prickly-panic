@@ -23,6 +23,10 @@
 <meta name="twitter:image:alt" content="The title Prickly Panic beside a pixel-art cactus wren flying above saguaros at sunset.">
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Prickly Panic">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
@@ -117,6 +121,13 @@
     width: 140px; padding: 5px 8px; border: 0; background: #fff;
     -webkit-user-select: text; user-select: text; outline: none;
   }
+  .name-row input::placeholder { color: #b8a58c; }
+  /* asked to fly without a nickname: the field turns red and gives a little shake */
+  .name-row input.need { background: #ffe1d6; animation: nudge 0.3s steps(2) 2; }
+  .name-need { margin-top: 6px; font-size: 11px; color: #c0392b; }
+  .name-need[hidden] { display: none; }
+  @keyframes nudge { 0% { transform: translateX(-3px); } 50% { transform: translateX(3px); } 100% { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .name-row input.need { animation: none; } }
   .scores { display: flex; justify-content: center; gap: 28px; margin-top: 10px; }
   .scores div { display: flex; flex-direction: column; }
   .scores span { font-size: 11px; text-transform: uppercase; color: var(--ink-soft); }
@@ -144,6 +155,18 @@
   .links a:hover, .links a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
   .links canvas { width: 11px; height: 11px; image-rendering: pixelated; }
 
+  /* "get the app" offer on the game-over card, shown once you've played a run */
+  .install { display: flex; align-items: center; gap: 10px; margin: 14px 4px 0; padding: 10px 12px; background: #ffe7b0; text-align: left; }
+  .install[hidden] { display: none; }
+  .install img { flex: none; width: 36px; height: 36px; image-rendering: pixelated; }
+  .install-text { flex: 1; font-size: 12px; line-height: 1.4; }
+  .install-text b { display: block; font-size: 13px; color: var(--ink); }
+  .install-text span { color: var(--ink-soft); }
+  .install .btn { flex: none; font-size: 13px; padding: 7px 10px; }
+  .install-close { flex: none; align-self: flex-start; font: inherit; font-size: 14px; line-height: 1; background: none; border: 0; color: var(--ink-soft); cursor: pointer; padding: 2px 2px 6px 6px; }
+  .install-close:hover, .install-close:focus-visible { color: var(--accent); }
+  .ios-share { display: inline-block; width: 11px; height: 13px; vertical-align: -2px; margin: 0 1px; }
+
   /* first-visit intro */
   #intro .card { padding-top: 24px; }
   .intro-wren { display: block; margin: -12px auto 0; width: 144px; height: 105px; image-rendering: pixelated; }
@@ -156,7 +179,7 @@
 </style>
 </head>
 <body>
-<canvas id="game" aria-label="Prickly Panic game"></canvas>
+<canvas id="game" aria-label="Prickly Panic game" tabindex="-1"></canvas>
 <button id="mute" class="pix" aria-label="Toggle sound"><canvas id="muteIcon" width="11" height="9"></canvas></button>
 
 <div id="intro" class="overlay" hidden>
@@ -178,7 +201,8 @@
       <li><canvas data-icon="pear" width="16" height="16"></canvas><span>Eat prickly pear = 10 SEC invincibility</span></li>
       <li><canvas data-icon="hawk" width="16" height="16"></canvas><span>Dodge the Cooper's hawk</span></li>
     </ul>
-    <label class="name-row">Nickname <input id="nameTitle" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
+    <label class="name-row">Nickname <input id="nameTitle" class="pix" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Your name" aria-describedby="nameTitleNeed"></label>
+    <p class="name-need" id="nameTitleNeed" hidden>Type a nickname to fly</p>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
     <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
@@ -198,10 +222,17 @@
     <ol class="board" id="board"></ol>
     <p class="stats" id="stats"></p>
     <p class="fact pix"><b>Desert fact:</b> <span id="fact"></span></p>
-    <label class="name-row">Nickname <input id="nameOver" class="pix" maxlength="12" autocomplete="off" spellcheck="false"></label>
+    <label class="name-row">Nickname <input id="nameOver" class="pix" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Your name" aria-describedby="nameOverNeed"></label>
+    <p class="name-need" id="nameOverNeed" hidden>Type a nickname to fly</p>
     <div class="btns">
       <button class="btn" id="again">Fly again</button>
       <button class="btn secondary" id="share">Share</button>
+    </div>
+    <div class="install pix" id="install" hidden>
+      <img src="icon-192.png" alt="" width="36" height="36">
+      <p class="install-text" id="installText"><b>Get the app</b><span>Fly again from your home screen, even offline.</span></p>
+      <button class="btn" id="installBtn">Install</button>
+      <button class="install-close" id="installClose" aria-label="Don't show again">&times;</button>
     </div>
     <p class="hint">or tap anywhere / Space</p>
     <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
@@ -298,7 +329,7 @@
   const sess = makeStore('sessionStorage');
   let best = local.get('waa.best', 0);
   let muted = local.get('waa.muted', false);
-  let playerName = local.get('waa.name', local.get('fwf.name', 'Wren'));
+  let playerName = String(local.get('waa.name', local.get('fwf.name', ''))).trim().slice(0, 12); // no default: the player types one
   let runs = sess.get('waa.runs', []);
   let lastRunN = 0;
   let lastFact = -1;
@@ -854,6 +885,7 @@
     resetRun();
     state = 'ready';
     titleEl.hidden = true; overEl.hidden = true;
+    canvas.focus({ preventScroll: true });
   }
   function flap() { bird.vy = FLAP; bird.flapT = 0; sfx.flap(); }
   function press() {
@@ -862,8 +894,8 @@
     if (paused) { paused = false; return; }
     if (state === 'ready') { state = 'play'; flap(); }
     else if (state === 'play') flap();
-    else if (state === 'title') toReady();
-    else if (state === 'over' && performance.now() - overAt > 650) toReady();
+    else if (state === 'title') { if (!needName()) toReady(); }
+    else if (state === 'over' && performance.now() - overAt > 650) { if (!needName()) toReady(); }
   }
   function die(why) {
     if (state !== 'play') return;
@@ -1603,13 +1635,23 @@
     return nearY;
   }
 
-  function drawBg(c, nearY) {
+  // Background scenery is pure decoration, so it must never read like an obstacle: it stands a few pixels
+  // back from the play ground line and gets washed in the near hills' haze, so it looks soft and far away
+  // next to the crisp, dark-outlined plants that can actually hit you.
+  function drawBg(c, nearY, sky) {
     for (const b of bgObjs) {
       const spr = b.kind === 'horse' ? b.frames[Math.abs(Math.floor(time * 6 + b.x * 0.01)) % 2] : b.spr;
       const onFlat = b.kind === 'horse' || b.kind === 'building' || b.kind === 'windSil';
-      const x = LX(b.x), base = onFlat ? LY(GROUND) - 1 : LY(nearY(b.x)) + 2;
+      const x = LX(b.x), base = onFlat ? LY(GROUND) - 5 : LY(nearY(b.x)) + 2;
       c.drawImage(spr, x - Math.floor(spr.width / 2), base - spr.height);
     }
+    const near = blend('near');
+    c.globalCompositeOperation = 'source-atop';
+    c.globalAlpha = 0.5;
+    c.fillStyle = mix(mix(near.from.col, near.to.col, near.t), sky.bot, 0.35);
+    c.fillRect(0, 0, c.canvas.width, c.canvas.height);
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = 'source-over';
   }
 
   function drawGround(c) {
@@ -1744,7 +1786,7 @@
     // midground + ground + plants share one layer, warmed and darkened at night
     lfctx.imageSmoothingEnabled = false;
     lfctx.clearRect(0, 0, lofg.width, lofg.height);
-    drawBg(lfctx, nearY);
+    drawBg(lfctx, nearY, sky); // haze only touches what's on the layer so far: the scenery
     drawGround(lfctx);
     // while powered up the plants go see-through; in the last 3 seconds they blink back, faster and faster
     let ghost = 1;
@@ -1902,10 +1944,21 @@
 
   function syncName() { nameInputs.forEach((i) => { if (document.activeElement !== i) i.value = playerName; }); }
   nameInputs.forEach((inp) => inp.addEventListener('input', () => {
-    playerName = inp.value.trim().slice(0, 12) || 'Wren';
+    playerName = inp.value.trim().slice(0, 12);
     local.set('waa.name', playerName);
+    if (playerName) nameInputs.forEach((i) => { i.classList.remove('need'); $(i.id + 'Need').hidden = true; });
     syncName();
   }));
+  // no nickname yet: point at the field on whichever card is up, and don't start the run
+  function needName() {
+    if (playerName) return false;
+    const inp = overEl.hidden ? $('nameTitle') : $('nameOver');
+    inp.classList.remove('need'); void inp.offsetWidth; inp.classList.add('need'); // restart the shake
+    $(inp.id + 'Need').hidden = false;
+    inp.focus({ preventScroll: true });
+    inp.scrollIntoView({ block: 'nearest' });
+    return true;
+  }
 
   function updateTitleBest() { $('titleBest').textContent = best > 0 ? `Your best: ${best}` : ''; }
 
@@ -1937,6 +1990,7 @@
     $('fact').textContent = sceneFact();
     $('share').textContent = 'Share';
     syncName();
+    updateInstall();
     overEl.hidden = false;
   }
 
@@ -1964,7 +2018,7 @@
     el.addEventListener('pointerdown', (e) => {
       const t = e.target;
       const onScrollbar = t.classList.contains('card') && e.offsetX > t.clientWidth;
-      down = t.closest('button, input, label, a') || onScrollbar ? null : { id: e.pointerId, x: e.clientX, y: e.clientY };
+      down = t.closest('button, input, label, a, .install') || onScrollbar ? null : { id: e.pointerId, x: e.clientX, y: e.clientY };
     });
     el.addEventListener('pointercancel', () => { down = null; });
     el.addEventListener('pointerup', (e) => {
@@ -1972,8 +2026,8 @@
       down = null;
     });
   }
-  $('start').addEventListener('click', () => { audio(); toReady(); });
-  $('again').addEventListener('click', () => { if (state === 'over' && performance.now() - overAt > 650) { audio(); toReady(); } });
+  $('start').addEventListener('click', () => { audio(); if (!needName()) toReady(); });
+  $('again').addEventListener('click', () => { if (state === 'over' && performance.now() - overAt > 650) { audio(); if (!needName()) toReady(); } });
   $('share').addEventListener('click', async () => {
     const s = stage();
     const msg = `I scored ${score} and flew all the way to ${s.place} playing Prickly Panic by @abhimangupta 🌵🐦`;
@@ -1984,12 +2038,41 @@
       $('share').textContent = 'Copied!';
     } catch { /* cancelled or blocked */ }
   });
+
+  // ---- "get the app": after your first run, offer to install the game so it's one tap to come back ----
+  // Chrome, Edge and Android hand us a real install prompt; iPhone and iPad have none, so there we show
+  // the Share > Add to Home Screen steps instead. Hidden once installed, inside the app, or after the x.
+  const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let installEvt = null, installOff = local.get('waa.installHide', false), installLater = false;
+  function updateInstall() { $('install').hidden = inApp || installOff || installLater || !(installEvt || isIOS); }
+  function hideInstall(forever) {
+    if (forever) { installOff = true; local.set('waa.installHide', true); } else installLater = true;
+    updateInstall();
+  }
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; installLater = false; updateInstall(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; hideInstall(true); });
+  $('installBtn').addEventListener('click', async () => {
+    if (installEvt) {
+      const evt = installEvt; installEvt = null;
+      try { await evt.prompt(); const { outcome } = await evt.userChoice; hideInstall(outcome === 'accepted'); } catch { hideInstall(false); }
+    } else if ($('installBtn').textContent === 'Got it') hideInstall(false);
+    else {
+      $('installText').innerHTML = '<b>Two taps to install</b><span>Tap <svg class="ios-share" viewBox="0 0 11 13" aria-label="Share"><path d="M5 0h1v1h1v1h1v1H7V2H6v6H5V2H4v1H3V2h1V1h1z M0 5h3v1H1v6h9V6H8V5h3v8H0z" fill="currentColor"/></svg> Share, then Add to Home Screen.</span>';
+      $('installBtn').textContent = 'Got it';
+    }
+  });
+  $('installClose').addEventListener('click', () => hideInstall(true));
+
   muteBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
-  muteBtn.addEventListener('click', () => { setMute(!muted); muteBtn.blur(); });
+  muteBtn.addEventListener('click', (e) => {
+    setMute(!muted);
+    if (e.detail > 0) muteBtn.blur();
+  });
 
   window.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') e.target.blur(); return; }
-    if (e.target.tagName === 'A' && (e.key === 'Enter' || e.code === 'Space')) return; // let a focused link open, not flap
+    if (e.target.tagName === 'INPUT') { if (e.key === 'Enter') { e.target.blur(); if (playerName) press(); } return; }
+    if (e.target.closest('button, a[href]') && (e.code === 'Enter' || e.code === 'Space')) return;
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Enter') { e.preventDefault(); if (!e.repeat) press(); }
     else if (e.code === 'KeyM') setMute(!muted);
     else if ((e.code === 'KeyP' || e.code === 'Escape') && state === 'play') paused = !paused;
@@ -2011,6 +2094,9 @@
   introEl.hidden = false; titleEl.hidden = true; requestAnimationFrame(introFrame);
   document.querySelectorAll('canvas[data-icon]').forEach((cv) => drawIcon(cv, cv.dataset.icon));
   requestAnimationFrame(frame);
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 
   // test hooks, only with ?debug in the URL
   if (/[?&]debug\b/.test(location.search)) window.__waa = {

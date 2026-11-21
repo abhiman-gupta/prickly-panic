@@ -16,6 +16,11 @@ python3 -m http.server 8137
 
 Then visit [localhost:8137](http://localhost:8137/).
 
+The game can be installed as an app (`manifest.webmanifest` + `sw.js`) and plays offline once loaded. After your first run,
+the game-over card offers to install it: a real install prompt in Chrome, Edge and Android, and Share > Add to Home Screen
+steps on iPhone and iPad. The page is fetched network-first, so updates show up right away; bump `CACHE` in `sw.js`
+when you change icons or other cached files.
+
 ## Controls
 
 - Tap, click, Space, ↑ or W to flap
