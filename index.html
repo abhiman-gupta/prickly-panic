@@ -155,17 +155,27 @@
   .links a:hover, .links a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
   .links canvas { width: 11px; height: 11px; image-rendering: pixelated; }
 
-  /* "get the app" offer on the game-over card, shown once you've played a run */
-  .install { display: flex; align-items: center; gap: 10px; margin: 14px 4px 0; padding: 10px 12px; background: #ffe7b0; text-align: left; }
+  /* "get the app" offer: a bright banner near the top of the game-over card (and the title card for returning players) */
+  .install { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 18px 4px 6px; padding: 14px 12px 12px; background: #ffd66b; text-align: left; position: relative; }
   .install[hidden] { display: none; }
-  .install img { flex: none; width: 36px; height: 36px; image-rendering: pixelated; }
-  .install-text { flex: 1; font-size: 12px; line-height: 1.4; }
-  .install-text b { display: block; font-size: 13px; color: var(--ink); }
-  .install-text span { color: var(--ink-soft); }
-  .install .btn { flex: none; font-size: 13px; padding: 7px 10px; }
-  .install-close { flex: none; align-self: flex-start; font: inherit; font-size: 14px; line-height: 1; background: none; border: 0; color: var(--ink-soft); cursor: pointer; padding: 2px 2px 6px 6px; }
+  .install img { flex: none; width: 48px; height: 48px; image-rendering: pixelated; animation: hop 1.1s steps(1) infinite; }
+  .install-text { flex: 1; font-size: 12px; line-height: 1.4; min-width: 0; }
+  .install-text b { display: block; font-size: 15px; color: var(--ink); }
+  .install-text span { color: var(--ink); }
+  .install .btn { flex: 1 1 100%; margin: 2px 4px 4px; font-size: 16px; padding: 9px 12px; background: var(--accent);
+    box-shadow:
+      calc(var(--u) * -1) 0 0 0 var(--ink), var(--u) 0 0 0 var(--ink),
+      0 calc(var(--u) * -1) 0 0 var(--ink), 0 var(--u) 0 0 var(--ink),
+      inset calc(var(--u) * -1) calc(var(--u) * -1) 0 0 #a8452a, inset var(--u) var(--u) 0 0 #f08a5a; }
+  .install-tag { position: absolute; top: -9px; left: 10px; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; letter-spacing: 1px; }
+  .install-close { position: absolute; top: -10px; right: -10px; width: 22px; height: 22px; font: inherit; font-size: 13px; line-height: 1; background: var(--panel); border: 0; color: var(--ink-soft); cursor: pointer; padding: 0; }
   .install-close:hover, .install-close:focus-visible { color: var(--accent); }
   .ios-share { display: inline-block; width: 11px; height: 13px; vertical-align: -2px; margin: 0 1px; }
+  @keyframes hop { 0%, 60% { transform: none; } 70% { transform: translateY(-4px); } 80% { transform: translateY(-2px); } }
+  @media (prefers-reduced-motion: reduce) { .install img { animation: none; } }
+
+  .near-best { font-size: 13px; margin-top: 8px; color: var(--accent); }
+  .near-best:empty { display: none; }
 
   /* first-visit intro */
   #intro .card { padding-top: 24px; }
@@ -205,6 +215,13 @@
     <p class="name-need" id="nameTitleNeed" hidden>Type a nickname to fly</p>
     <div class="btns"><button class="btn" id="start">Fly!</button></div>
     <p class="hint" id="titleBest"></p>
+    <div class="install pix" data-install hidden>
+      <span class="install-tag">FREE</span>
+      <img src="icon-192.png" alt="" width="48" height="48">
+      <p class="install-text"><b>Get the app</b><span>One tap from your home screen. Plays offline.</span></p>
+      <button class="btn install-btn">Install</button>
+      <button class="install-close pix" aria-label="Not now">&times;</button>
+    </div>
     <p class="foot">An independent, non-commercial game starring Arizona's state bird.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
 </div>
@@ -218,23 +235,26 @@
       <div><span>Best</span><b id="oBest">0</b></div>
     </div>
     <span class="badge pix" id="newBest" hidden>New best!</span>
-    <h3>This session</h3>
-    <ol class="board" id="board"></ol>
-    <p class="stats" id="stats"></p>
-    <p class="fact pix"><b>Desert fact:</b> <span id="fact"></span></p>
+    <p class="near-best" id="nearBest"></p>
+    <p class="stats" id="runLine"></p>
+    <div class="install pix" data-install hidden>
+      <span class="install-tag">FREE</span>
+      <img src="icon-192.png" alt="" width="48" height="48">
+      <p class="install-text"><b>Get the app</b><span>One tap from your home screen. Plays offline.</span></p>
+      <button class="btn install-btn">Install</button>
+      <button class="install-close pix" aria-label="Not now">&times;</button>
+    </div>
     <label class="name-row">Nickname <input id="nameOver" class="pix" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Your name" aria-describedby="nameOverNeed"></label>
     <p class="name-need" id="nameOverNeed" hidden>Type a nickname to fly</p>
     <div class="btns">
       <button class="btn" id="again">Fly again</button>
       <button class="btn secondary" id="share">Share</button>
     </div>
-    <div class="install pix" id="install" hidden>
-      <img src="icon-192.png" alt="" width="36" height="36">
-      <p class="install-text" id="installText"><b>Get the app</b><span>Fly again from your home screen, even offline.</span></p>
-      <button class="btn" id="installBtn">Install</button>
-      <button class="install-close" id="installClose" aria-label="Don't show again">&times;</button>
-    </div>
     <p class="hint">or tap anywhere / Space</p>
+    <h3>This session</h3>
+    <ol class="board" id="board"></ol>
+    <p class="stats" id="stats"></p>
+    <p class="fact pix"><b>Desert fact:</b> <span id="fact"></span></p>
     <p class="foot">An independent, non-commercial game.<span class="credit">Made by Abhiman Gupta</span><span class="links"><a href="https://abhimangupta.com" target="_blank" rel="noopener"><canvas data-icon="web" data-size="22" aria-hidden="true"></canvas>abhimangupta.com</a><a href="https://www.instagram.com/abhimangupta/" target="_blank" rel="noopener" aria-label="Instagram: @abhimangupta"><canvas data-icon="insta" data-size="22" aria-hidden="true"></canvas>@abhimangupta</a></span></p>
   </div>
 </div>
@@ -823,6 +843,9 @@
     thunder() { noise(120, 0.5, 1.4, 0.7, 0, 'lowpass'); noise(70, 0.5, 1.2, 0.5, 0.15, 'lowpass'); },
     stage() { [523, 659, 784, 1046].forEach((f, i) => tone(f, f * 1.001, 0.12, 'square', 0.06, i * 0.1)); },
     powerDown() { tone(784, 392, 0.25, 'square', 0.05); },
+    close(n) { const k = Math.min(n, 6) * 0.06; tone(1320 * (1 + k), 1760 * (1 + k), 0.06, 'square', 0.05); tone(1760 * (1 + k), 2350 * (1 + k), 0.07, 'square', 0.04, 0.05); },
+    best() { [523, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, f * 1.01, 0.11, 'square', 0.06, i * 0.06)); },
+    dodge() { tone(600, 1400, 0.12, 'triangle', 0.07); },
   };
 
   // =====================================================================
@@ -834,6 +857,9 @@
   let invincible = 0; // seconds of prickly-pear power left
   let score = 0, pearsEaten = 0, heat = 0, spawned = 0, nextGap = 0, hotTick = 0;
   let dyingT = 0, overAt = 0, reason = '', cause = '', deathKind = '';
+  // score = plants cleared + close-call bonuses; `run` counts what happened this run (stages follow plants, not bonuses)
+  const NEAR = 10;         // a pass this close to a spine (world units of daylight) is a close call, worth +1
+  let run = { cleared: 0, pears: 0, close: 0, hawks: 0 }, closeChain = 0, beatBest = false, bestAtStart = 0;
   // every way to go down, with a headline and what actually happened
   const DEATHS = {
     saguaro: ['Spined!', 'Flew into a saguaro'],
@@ -859,6 +885,7 @@
 
   function resetRun() {
     score = 0; pearsEaten = 0; invincible = 0; heat = 0; spawned = 0; nextGap = 0; dyingT = 0; hotTick = 0;
+    run = { cleared: 0, pears: 0, close: 0, hawks: 0 }; closeChain = 0; beatBest = false; bestAtStart = best;
     obstacles = []; pears = []; hawks = []; popups = []; banner = null;
     const wasRegion = regionTo;
     startStage = randInt(0, STAGES.length - 1);
@@ -911,7 +938,7 @@
     overAt = performance.now();
     lastRunN = runs.length + 1;
     const s = stage();
-    runs.push({ n: lastRunN, name: playerName, score, pears: pearsEaten, place: s.place, season: s.label });
+    runs.push({ n: lastRunN, name: playerName, score, cleared: run.cleared, pears: pearsEaten, place: s.place, season: s.label });
     sess.set('waa.runs', runs);
     const isBest = score > best;
     if (isBest) { best = score; local.set('waa.best', best); }
@@ -1209,7 +1236,7 @@
       const hi = HEAT_LINE + 45, lo = Math.min(GROUND - 90, prev.top - 50, o.top - 60); // ~bob + wren size + falling margin
       if (room > 90 && lo - hi >= 15) pears.push({ x: prev.x + prev.reach + room / 2, y: rand(hi, lo), taken: false, p: rand(0, 6) });
     }
-    if (score >= 6 && hawks.length === 0 && Math.random() < 0.16 + 0.24 * d) {
+    if (run.cleared >= 6 && hawks.length === 0 && Math.random() < 0.16 + 0.24 * d) {
       hawks.push({ x: W + 60, y: rand(HEAT_LINE + 20, 330), warn: 1.25 });
       sfx.hawk();
     }
@@ -1289,11 +1316,18 @@
     for (let x = rand(0, 40); x < W + 30; ) { spawnBg(); bgObjs[bgObjs.length - 1].x = x; x += nextBg; }
   }
 
+  // a desert cumulus: a row of puffs, biggest in the middle, all resting on one flat base (y = h).
+  // Puffs are in scene pixels relative to the cloud's anchor; the body spans y = -h .. h.
   function makeCloud(storm) {
-    const w = storm ? randInt(34, 56) : randInt(22, 36), h = storm ? randInt(16, 26) : randInt(9, 13);
+    const w = storm ? randInt(44, 68) : randInt(22, 36), h = storm ? randInt(11, 15) : randInt(6, 8);
+    const n = storm ? randInt(5, 6) : randInt(3, 4);
     const puffs = [];
-    for (let i = 0; i < (storm ? 9 : 5); i++) puffs.push([rand(w * 0.2, w * 0.8), rand(h * 0.35, h * 0.6), rand(h * 0.3, h * 0.5)]);
-    return { storm, w, h, puffs, x: rand(-20, W), y: storm ? rand(-offY * 0.3 + 30, 150) : rand(40, 220), drift: rand(2, 6) };
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const r = Math.max(3, Math.round(h * (0.5 + 0.5 * Math.sin(Math.PI * t)) * rand(0.85, 1)));
+      puffs.push([Math.round(lerp(r, w - r, t) + rand(-1, 1)), h - r, r]);
+    }
+    return { storm, w, h, puffs, x: rand(-20, W), y: storm ? rand(-offY * 0.3 + 40, 150) : rand(50, 220), drift: rand(2, 6) };
   }
   function seedClouds(keepOld = false) {
     const s = season();
@@ -1398,9 +1432,10 @@
     }
     if (state !== 'play') return;
 
-    const d = Math.min(1, score / 45);
-    // speed ramps quickly: the old top speed (240) by score 20, then keeps creeping up to 280 by score 60
-    speed = 165 + 75 * Math.min(1, score / 20) + 40 * clamp((score - 20) / 40, 0, 1);
+    const cl = run.cleared; // difficulty follows plants cleared, not close-call bonuses
+    const d = Math.min(1, cl / 45);
+    // speed ramps quickly: the old top speed (240) by 20 plants, then keeps creeping up to 280 by 60
+    speed = 165 + 75 * Math.min(1, cl / 20) + 40 * clamp((cl - 20) / 40, 0, 1);
     scroll(dt, true);
     bird.flapT += dt;
 
@@ -1435,16 +1470,29 @@
     if (!last || last.x + nextGap + 60 < W + SPAWN_AHEAD) spawnObstacle(d);
 
     for (const o of obstacles) {
-      if (!o.passed && o.x + o.reach < bird.x - BR) {
-        o.passed = true; score++; sfx.score();
-        const ns = startStage + Math.floor(score / STAGE_LEN);
-        if (ns !== stageIdx) setStage(ns, false);
+      if (Math.abs(o.x - bird.x) < o.reach + BR + 4) {
+        // closest the wren came to this plant (negative = hit); passes made while powered up don't count as close calls
+        if (invincible > 0) o.ghost = true;
+        let gap = Infinity;
+        for (const c of o.caps) gap = Math.min(gap, segDist(bird.x, bird.y, o.x + c.x1, c.y1, o.x + c.x2, c.y2) - (c.r + BR - 2));
+        if (gap < 0 && invincible <= 0) return die(o.kind);
+        o.near = Math.min(o.near ?? Infinity, gap);
       }
-      if (invincible <= 0 && Math.abs(o.x - bird.x) < o.reach + BR + 4 && bird.y > o.top - BR - 10) {
-        for (const c of o.caps) {
-          if (segDist(bird.x, bird.y, o.x + c.x1, c.y1, o.x + c.x2, c.y2) < c.r + BR - 2) {
-            return die(o.kind);
-          }
+      if (!o.passed && o.x + o.reach < bird.x - BR) {
+        o.passed = true; score++; run.cleared++; sfx.score();
+        if (!o.ghost && o.near < NEAR) {
+          run.close++; closeChain++; score++;
+          popups.push({ x: bird.x + 10, y: bird.y - 26, text: closeChain > 1 ? `CLOSE x${closeChain}! +1` : 'CLOSE! +1', life: 0.9, col: '#fff2dc' });
+          for (let i = 0; i < 8; i++) particles.push({ x: bird.x, y: bird.y, vx: rand(-110, 40), vy: rand(-120, 60), life: rand(0.3, 0.5), max: 0.5, kind: 'spark', col: pick(['#fff2dc', '#ffd36b', '#ffffff']) });
+          sfx.close(closeChain);
+        } else closeChain = 0;
+        const ns = startStage + Math.floor(run.cleared / STAGE_LEN);
+        if (ns !== stageIdx) setStage(ns, false);
+        if (!beatBest && bestAtStart > 0 && score > bestAtStart) {
+          beatBest = true;
+          popups.push({ x: bird.x + 50, y: bird.y - 70, text: 'NEW BEST!', life: 1.8, col: '#ffd36b', mult: 2 });
+          for (let i = 0; i < 24; i++) particles.push({ x: bird.x, y: bird.y - 20, vx: rand(-160, 160), vy: rand(-240, -40), life: rand(0.6, 1.1), max: 1.1, kind: 'spark', col: pick(['#ffd36b', '#e0568a', '#6fd0ff', '#b6f28a', '#ffffff']) });
+          sfx.best();
         }
       }
     }
@@ -1454,7 +1502,7 @@
       if (t.taken) continue;
       const ty = t.y + Math.sin(time * 3 + t.p) * 5;
       if (Math.hypot(t.x - bird.x, ty - bird.y) < BR + 11) {
-        t.taken = true; pearsEaten++;
+        t.taken = true; pearsEaten++; run.pears++;
         invincible = 10;
         popups.push({ x: t.x, y: ty - 16, text: 'INVINCIBLE!', life: 1.1 });
         for (let i = 0; i < 10; i++) particles.push({ x: t.x, y: t.y, vx: rand(-90, 90), vy: rand(-140, 20), life: rand(0.4, 0.7), max: 0.7, kind: 'spark', col: pick(['#e0568a', '#b8235a', '#ffd36b']) });
@@ -1476,6 +1524,10 @@
         const hitBody = Math.hypot(hk.x + 4 * P - bird.x, hk.y - bird.y) < BR + 16;
         const hitHead = Math.hypot(hk.x - 12 * P - bird.x, hk.y - 2 * P - bird.y) < BR + 8;
         if (invincible <= 0 && (hitBody || hitHead)) return die('hawk');
+        if (!hk.dodged && hk.x < bird.x - 30) {
+          hk.dodged = true; run.hawks++; sfx.dodge();
+          popups.push({ x: bird.x + 10, y: bird.y - 30, text: 'DODGED!', life: 0.9, col: '#cfe6ff' });
+        }
       }
     }
     hawks = hawks.filter((hk) => hk.x > -80);
@@ -1570,39 +1622,55 @@
       const x = LX(W * 0.2 + f * W * 0.6), y = LY(GROUND - 130 - Math.sin(f * Math.PI) * (GROUND - 130 - (-offY + 90)));
       const r = Math.max(7, Math.round(24 / P));
       c.globalAlpha = 0.12; disc(c, x, y, r + 5, '#ffe2c8'); c.globalAlpha = 0.2; disc(c, x, y, r + 2, '#ffe2c8'); c.globalAlpha = 1;
-      disc(c, x, y, r, '#efe0cc');
-      // lit side
-      c.save(); c.beginPath(); c.rect(x - r - 1, y - r - 1, r * 2 + 2, r * 2 + 2); c.clip();
-      disc(c, x - Math.round(r * 0.25), y - Math.round(r * 0.25), Math.round(r * 0.78), '#fbf0e0');
-      c.restore();
-      // maria + craters (positions as fractions of the radius)
-      for (const [fx, fy, fr, col] of [[-0.35, -0.2, 0.32, '#d6c3ae'], [0.25, 0.3, 0.28, '#d6c3ae'], [0.1, -0.45, 0.18, '#cdb8a2'], [-0.15, 0.5, 0.16, '#cdb8a2'], [0.5, -0.1, 0.14, '#cdb8a2'], [-0.55, 0.25, 0.12, '#cdb8a2']]) {
-        const cx = x + Math.round(fx * r), cy = y + Math.round(fy * r), cr = Math.max(1, Math.round(fr * r));
-        disc(c, cx, cy, cr, col);
-        R(c, cx - cr, cy - cr, Math.max(1, cr), 1, '#bfa890');  // shadowed rim
-        R(c, cx, cy + cr, Math.max(1, cr), 1, '#fff6ea');       // lit rim
-      }
+      c.drawImage(moonSprite(r), x - r, y - r);
     }
   }
 
+  // the full moon, painted once per radius: a clean pixel circle, lit from the upper left,
+  // with round craters (no square rims) and a soft shadowed limb on the lower right
+  const moonCache = {};
+  function moonSprite(r) {
+    return moonCache[r] || (moonCache[r] = paint(2 * r + 1, 2 * r + 1, (g) => {
+      const c = r + 0.5;
+      g.ell(c, c, r + 0.45, r + 0.45, '#d8c4aa');
+      g.ell(c - 0.7, c - 0.7, r - 0.3, r - 0.3, '#eee0cb');
+      g.ell(c - r * 0.3, c - r * 0.3, r * 0.5, r * 0.5, '#fbf3e6');
+      for (const [fx, fy, fr] of [[-0.36, -0.1, 0.24], [0.3, 0.3, 0.22], [0.1, -0.48, 0.14], [-0.1, 0.5, 0.13], [0.52, -0.08, 0.11], [-0.56, 0.32, 0.1]]) {
+        const cx = c + fx * r, cy = c + fy * r, cr = Math.max(0.9, fr * r);
+        g.ell(cx + 0.6, cy + 0.6, cr, cr, '#fbf3e6'); // lit lower-right rim
+        g.ell(cx, cy, cr, cr, '#d4bfa4');             // crater floor
+      }
+    }, { outline: null }));
+  }
+
+  // Each cloud is painted fully opaque into a scratch canvas first, then laid on the sky with one alpha.
+  // (Fading the puffs one by one let their overlaps stack up into blotchy, see-through circles.)
+  const cloudCv = document.createElement('canvas'), cloudC = cloudCv.getContext('2d');
   function drawClouds(c, sky) {
     for (const cl of clouds) {
-      const fade = cl.storm ? (season() === 'monsoon' ? seasonT : 1 - seasonT) : clamp(1 - sky.dark * 1.8, 0, 1); // fair-weather clouds melt away after dark
+      const fade = cl.storm ? (season() === 'monsoon' ? seasonT : 1 - seasonT) : clamp(1 - sky.dark * 2.2, 0, 1); // fair-weather clouds melt away after dark
       if (fade <= 0.05) continue;
-      const x0 = LX(cl.x), y0 = LY(cl.y);
-      const base = cl.storm ? mix('#7a6a8a', sky.bot, 0.15) : mix('#fff6ea', sky.bot, 0.35 + sky.dark * 0.6);
-      const shade = cl.storm ? '#4e4466' : mix('#e2cfc6', sky.top, 0.3 + sky.dark * 0.6);
-      const lit = mix(base, sky.bot, 0.5);
+      const base = cl.storm ? mix('#7a6a8a', sky.bot, 0.15) : mix('#fff6ea', sky.bot, 0.3 + sky.dark * 0.6);
+      const shade = cl.storm ? '#4e4466' : mix('#d9c4c4', sky.top, 0.3 + sky.dark * 0.6);
+      const lit = cl.storm ? mix(base, '#c9bcd6', 0.45) : mix(base, '#ffffff', 0.55);
+      const under = mix(base, shade, 0.5);
+      const cw = cl.w + 4, ch = cl.h * 2 + 6, ox = 2, oy = cl.h + 2;
+      if (cloudCv.width < cw || cloudCv.height < ch) { cloudCv.width = Math.max(cloudCv.width, cw); cloudCv.height = Math.max(cloudCv.height, ch); }
+      cloudC.clearRect(0, 0, cloudCv.width, cloudCv.height);
+      const a = cl.puffs[0], b = cl.puffs[cl.puffs.length - 1], rmin = Math.min(a[2], b[2]);
+      const body = (col, dy) => {
+        for (const [px, py, pr] of cl.puffs) disc(cloudC, ox + px, oy + py + dy, pr, col);
+        R(cloudC, ox + a[0], oy + cl.h - rmin + dy, b[0] - a[0] + 1, rmin + 1, col); // flat base between the end puffs
+      };
+      body(lit, 0);                       // the whole silhouette, sunlit
+      cloudC.globalCompositeOperation = 'source-atop';
+      body(base, cl.storm ? 3 : 2);       // ...then the body again, shifted down: only a bright rim stays along the tops
+      R(cloudC, 0, oy + cl.h - (cl.storm ? 3 : 1), cw, cl.storm ? 4 : 2, under); // flat, darker underside
+      cloudC.globalCompositeOperation = 'destination-over';
+      body(shade, 1);                     // 1px shadow rim along the bottom, tucked behind
+      cloudC.globalCompositeOperation = 'source-over';
       c.globalAlpha = fade;
-      for (const [px, py, pr] of cl.puffs) disc(c, x0 + Math.round(px), y0 + Math.round(py) + 1, Math.round(pr), shade);
-      for (const [px, py, pr] of cl.puffs) disc(c, x0 + Math.round(px), y0 + Math.round(py), Math.max(1, Math.round(pr) - 1), base);
-      for (const [px, py, pr] of cl.puffs) R(c, x0 + Math.round(px - pr * 0.4), y0 + Math.round(py - pr * 0.7), Math.max(1, Math.round(pr * 0.6)), 1, lit);
-      // flat base, like desert cumulus
-      const minX = Math.min(...cl.puffs.map((q) => q[0] - q[2] * 0.6)), maxX = Math.max(...cl.puffs.map((q) => q[0] + q[2] * 0.6));
-      const baseY = y0 + Math.round(Math.max(...cl.puffs.map((q) => q[1])));
-      R(c, x0 + Math.round(minX), baseY, Math.round(maxX - minX), 2, base);
-      R(c, x0 + Math.round(minX) + 1, baseY + 2, Math.round(maxX - minX) - 2, 1, shade);
-      c.fillStyle = 'rgba(0,0,0,0)';
+      c.drawImage(cloudCv, 0, 0, cw, ch, LX(cl.x) - ox, LY(cl.y) - oy, cw, ch);
       c.globalAlpha = 1;
     }
   }
@@ -1837,15 +1905,18 @@
 
     // text + HUD on the same pixel grid
     const cols = canvas.width / N;
-    for (const p of popups) ptext(p.text, LX(p.x), LY(p.y), 1, '#ffe08a');
+    for (const p of popups) { ctx.globalAlpha = clamp(p.life * 4, 0, 1); ptext(p.text, LX(p.x), LY(p.y), p.mult || 1, p.col || '#ffe08a'); ctx.globalAlpha = 1; }
     if (state === 'ready') {
       ptext('TAP TO FLAP!', cols / 2, LY(400), inkBox('TAP TO FLAP!', 2).w / N <= cols - 10 ? 2 : 1);
       ptext('too hot up here', cols / 2, LY(HEAT_LINE - 22), 1, '#ffd2a8');
     }
     if (state === 'play' || state === 'dying') {
       ptext(String(score), cols / 2, 12, 3);
+      // your best stays in view so every run is a chase; it flips to NEW BEST once you pass it
+      const showBest = bestAtStart > 0;
+      if (showBest) ptext(beatBest ? 'NEW BEST' : `BEST ${bestAtStart}`, cols / 2, 25, 1, beatBest ? '#ffd36b' : '#fff2dc');
       if (invincible > 0) {
-        const w = 24, x0 = Math.round(cols / 2 - w / 2), y0 = 22;
+        const w = 24, x0 = Math.round(cols / 2 - w / 2), y0 = showBest ? 31 : 22;
         R(ctx, (x0 - 1) * N, (y0 - 1) * N, (w + 2) * N, 4 * N, '#2a1a10');
         R(ctx, x0 * N, y0 * N, Math.ceil(w * invincible / 10) * N, 2 * N, invincible < 3 && Math.floor(time * 8) % 2 ? '#fff2dc' : '#e0568a');
       }
@@ -1960,7 +2031,7 @@
     return true;
   }
 
-  function updateTitleBest() { $('titleBest').textContent = best > 0 ? `Your best: ${best}` : ''; }
+  function updateTitleBest() { $('titleBest').textContent = best > 0 ? `Your best: ${best}` : ''; updateInstall(); }
 
   // pick a fact about something in the scene: what got you first, then whatever else was around
   function sceneFact() {
@@ -1979,13 +2050,18 @@
     $('oScore').textContent = score;
     $('oBest').textContent = best;
     $('newBest').hidden = !(isBest && score > 0);
+    // so close: nudge one more go
+    const short = bestAtStart - score;
+    $('nearBest').textContent = !isBest && bestAtStart > 0 && short >= 0 && short <= Math.max(3, Math.ceil(bestAtStart * 0.25))
+      ? (short === 0 ? 'Tied your best! One more to beat it.' : `Just ${short + 1} more to beat your best!`) : '';
+    $('runLine').textContent = `${run.cleared} plants / ${run.close} close call${run.close === 1 ? '' : 's'} / ${pearsEaten} pear${pearsEaten === 1 ? '' : 's'}`;
     const sorted = [...runs].sort((a, b) => b.score - a.score || a.n - b.n);
     const top = sorted.slice(0, 5);
     const row = (r, rank) => `<li class="${r.n === lastRunN ? 'me' : ''}"><span class="rank">${rank}</span><span class="who">${escapeHtml(r.name || 'Wren')}</span><span class="pts">${r.score}</span></li>`;
     let html = top.map((r, i) => row(r, i + 1)).join('');
     if (!top.some((r) => r.n === lastRunN)) html += '<li class="gap">...</li>' + row(runs[runs.length - 1], sorted.findIndex((r) => r.n === lastRunN) + 1);
     $('board').innerHTML = html;
-    const totalS = runs.reduce((a, r) => a + r.score, 0), totalT = runs.reduce((a, r) => a + (r.pears || 0), 0);
+    const totalS = runs.reduce((a, r) => a + (r.cleared ?? r.score), 0), totalT = runs.reduce((a, r) => a + (r.pears || 0), 0);
     $('stats').textContent = `${runs.length} run${runs.length === 1 ? '' : 's'} / ${totalS} plants cleared / ${totalT} prickly pears`;
     $('fact').textContent = sceneFact();
     $('share').textContent = 'Share';
@@ -2044,25 +2120,36 @@
   // the Share > Add to Home Screen steps instead. Hidden once installed, inside the app, or after the x.
   const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // The x only snoozes it for this visit; after three snoozes it stays away for good.
   let installEvt = null, installOff = local.get('waa.installHide', false), installLater = false;
-  function updateInstall() { $('install').hidden = inApp || installOff || installLater || !(installEvt || isIOS); }
+  let installSnoozes = local.get('waa.installSnooze', 0);
+  const installEls = [...document.querySelectorAll('[data-install]')];
+  function updateInstall() {
+    const can = !(inApp || installOff || installLater) && !!(installEvt || isIOS);
+    // on the title card, only for people who've already played (first-timers should just fly)
+    installEls.forEach((el) => { el.hidden = !can || (!!el.closest('#title') && best <= 0 && !runs.length); });
+  }
   function hideInstall(forever) {
     if (forever) { installOff = true; local.set('waa.installHide', true); } else installLater = true;
     updateInstall();
   }
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; installLater = false; updateInstall(); });
   window.addEventListener('appinstalled', () => { installEvt = null; hideInstall(true); });
-  $('installBtn').addEventListener('click', async () => {
-    if (installEvt) {
-      const evt = installEvt; installEvt = null;
-      try { await evt.prompt(); const { outcome } = await evt.userChoice; hideInstall(outcome === 'accepted'); } catch { hideInstall(false); }
-    } else if ($('installBtn').textContent === 'Got it') hideInstall(false);
-    else {
-      $('installText').innerHTML = '<b>Two taps to install</b><span>Tap <svg class="ios-share" viewBox="0 0 11 13" aria-label="Share"><path d="M5 0h1v1h1v1h1v1H7V2H6v6H5V2H4v1H3V2h1V1h1z M0 5h3v1H1v6h9V6H8V5h3v8H0z" fill="currentColor"/></svg> Share, then Add to Home Screen.</span>';
-      $('installBtn').textContent = 'Got it';
-    }
-  });
-  $('installClose').addEventListener('click', () => hideInstall(true));
+  const IOS_STEPS = '<b>Two taps to install</b><span>Tap <svg class="ios-share" viewBox="0 0 11 13" aria-label="Share"><path d="M5 0h1v1h1v1h1v1H7V2H6v6H5V2H4v1H3V2h1V1h1z M0 5h3v1H1v6h9V6H8V5h3v8H0z" fill="currentColor"/></svg> Share, then Add to Home Screen.</span>';
+  for (const el of installEls) {
+    const btn = el.querySelector('.install-btn');
+    btn.addEventListener('click', async () => {
+      if (installEvt) {
+        const evt = installEvt; installEvt = null;
+        try { await evt.prompt(); const { outcome } = await evt.userChoice; hideInstall(outcome === 'accepted'); } catch { hideInstall(false); }
+      } else if (btn.textContent === 'Got it') hideInstall(false);
+      else { installEls.forEach((e) => { e.querySelector('.install-text').innerHTML = IOS_STEPS; e.querySelector('.install-btn').textContent = 'Got it'; }); }
+    });
+    el.querySelector('.install-close').addEventListener('click', () => {
+      installSnoozes++; local.set('waa.installSnooze', installSnoozes);
+      hideInstall(installSnoozes >= 3);
+    });
+  }
 
   muteBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
   muteBtn.addEventListener('click', (e) => {
@@ -2105,7 +2192,7 @@
     stage(i) { setStage(i, true); regionFrom = regionTo; fillBg(); },
     spawn(kind, x) { const o = BUILD[kind](0.5); o.x = x ?? W * 0.7; o.passed = true; obstacles.push(o); return o.kind; },
     pear(x, y) { pears.push({ x, y, taken: false, p: 0 }); },
-    get invincible() { return invincible; },
+    get invincible() { return invincible; }, get run() { return run; }, endRun() { if (state === 'play') { state = 'dying'; endRun(); } },
     get pears() { return pears; }, get obstacles() { return obstacles; },
     hawk() { hawks.push({ x: W * 0.55, y: bird.y - 30, warn: 0 }); },
     freeze(v = true) { frozen = v; paused = false; },
