@@ -190,7 +190,7 @@
   .install-close:hover, .install-close:focus-visible { color: var(--accent); }
   /* install guide: soft and friendly, plain readable text (not the pixel font) so anyone can follow it */
   #guide { z-index: 6; background: rgba(29, 18, 54, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); align-items: flex-start; padding-top: max(16px, env(safe-area-inset-top)); }
-  #guide.arrow-top { padding-top: 76px; }
+  #guide.arrow-top { padding-top: 84px; }
   .guide-card { max-width: 400px; padding: 18px 16px 12px; margin-bottom: 64px; --sys: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
   .guide-card .install-close { top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; box-shadow: none; background: rgba(42, 26, 16, 0.08); color: var(--ink-soft); font: 400 22px/1 var(--sys); }
   .g-hero { position: relative; width: 52px; height: 52px; margin: 0 auto; }
@@ -216,24 +216,27 @@
   .g-text small { display: block; font-size: 14px; color: #8a8a8e; margin-top: 2px; }
   .g-note { font: 14px/1.4 var(--sys); color: var(--ink-soft); margin-top: 10px; -webkit-font-smoothing: antialiased; }
   .g-note:empty { display: none; }
-  /* "Start here": one tag shape with its pointer built in. Warm gradient, crisp 1px edge, a top highlight and layered shadows */
-  .g-arrow { position: fixed; z-index: 7; pointer-events: none; animation: g-bob 0.9s ease-in-out infinite; filter: drop-shadow(0 8px 10px rgba(20, 8, 30, 0.35)) drop-shadow(0 2px 2px rgba(20, 8, 30, 0.3)); }
+  /* "Start here" in the game's pixel style: Silkscreen, a hard ink border, pixel highlight and shadow bands,
+     a stepped pixel pointer, a hard (unblurred) drop shadow, and a two-frame bob */
+  .g-arrow { position: fixed; z-index: 7; pointer-events: none; animation: g-bob 0.8s steps(1) infinite; filter: drop-shadow(4px 4px 0 rgba(20, 8, 30, 0.45)); }
   .g-arrow[hidden] { display: none; }
-  .g-arrow i { display: none; }
-  .g-arrow span { position: relative; display: block; padding: 9px 16px 10px; border-radius: 8px; border: 1px solid #9c3a1a;
-    background: linear-gradient(180deg, #ff9a5c 0%, #f0703a 48%, #d9542a 100%);
-    box-shadow: inset 0 1px 0 rgba(255, 236, 214, 0.75);
-    color: #fff; font: 700 15px/1 -apple-system, system-ui, sans-serif; letter-spacing: 0.2px; text-shadow: 0 1px 0 rgba(110, 32, 8, 0.55); white-space: nowrap; }
-  /* the pointer: a rotated square in the gradient's end colour, edged on its two outer sides only */
-  .g-arrow span::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 18px; height: 18px; margin-left: -10px; background: linear-gradient(135deg, transparent 50%, #d9542a 50%); border-right: 1px solid #9c3a1a; border-bottom: 1px solid #9c3a1a; border-bottom-right-radius: 2px; transform: rotate(45deg); }
-  .g-arrow.top-right span::after { bottom: auto; top: -10px; background: linear-gradient(135deg, #ff9a5c 50%, transparent 50%); border: 0; border-left: 1px solid #9c3a1a; border-top: 1px solid #9c3a1a; border-radius: 2px 0 0 0; }
-  .g-arrow.bottom-right span::after { left: auto; right: 18px; }
-  .g-arrow.top-right span::after { left: auto; right: 14px; margin-left: 0; }
-  .g-arrow.bottom-menu { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 8px); left: 28%; transform: translateX(-50%); }
-  .g-arrow.bottom-center { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 8px); left: 50%; transform: translateX(-50%); }
-  .g-arrow.bottom-right { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 8px); right: 6%; }
-  .g-arrow.top-right { top: calc(max(6px, env(safe-area-inset-top)) + 8px); right: 10px; }
-  @keyframes g-bob { 50% { margin-bottom: -6px; margin-top: 6px; } }
+  .g-arrow span { display: block; padding: 9px 12px 8px; background: var(--accent); color: #fff; font: 13px/1 "Silkscreen", monospace; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; text-shadow: 2px 2px 0 #8a3418;
+    box-shadow: -3px 0 0 0 var(--ink), 3px 0 0 0 var(--ink), 0 -3px 0 0 var(--ink), 0 3px 0 0 var(--ink),
+      inset -3px -3px 0 0 #a8452a, inset 3px 3px 0 0 #f08a5a; }
+  /* the pointer: a staircase triangle (clip-path) with a 3px ink outline made by unblurred drop-shadows on its wrapper */
+  .g-arrow i { position: absolute; left: 50%; top: 100%; width: 40px; height: 20px; margin-left: -20px;
+    filter: drop-shadow(3px 0 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink)) drop-shadow(0 3px 0 var(--ink)); }
+  .g-arrow i::after { content: ""; position: absolute; inset: 0; background: var(--accent);
+    clip-path: polygon(0 0, 40px 0, 40px 4px, 36px 4px, 36px 8px, 32px 8px, 32px 12px, 28px 12px, 28px 16px, 24px 16px, 24px 20px, 16px 20px, 16px 16px, 12px 16px, 12px 12px, 8px 12px, 8px 8px, 4px 8px, 4px 4px, 0 4px); }
+  .g-arrow.top-right i { top: auto; bottom: 100%; left: auto; right: 12px; margin-left: 0;
+    filter: drop-shadow(3px 0 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink)) drop-shadow(0 -3px 0 var(--ink)); }
+  .g-arrow.top-right i::after { background: #f08a5a; transform: scaleY(-1); }
+  .g-arrow.bottom-right i { left: auto; right: 14px; margin-left: 0; }
+  .g-arrow.bottom-menu { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 22px); left: 28%; transform: translateX(-50%); }
+  .g-arrow.bottom-center { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 22px); left: 50%; transform: translateX(-50%); }
+  .g-arrow.bottom-right { bottom: calc(max(6px, env(safe-area-inset-bottom)) + 22px); right: 6%; }
+  .g-arrow.top-right { top: calc(max(6px, env(safe-area-inset-top)) + 24px); right: 12px; }
+  @keyframes g-bob { 50% { margin-bottom: -4px; margin-top: 4px; } }
   @media (prefers-reduced-motion: reduce) { .g-arrow { animation: none; } }
   .ios-share { display: inline-block; width: 11px; height: 13px; vertical-align: -2px; margin: 0 1px; }
   @keyframes hop { 0%, 60% { transform: none; } 70% { transform: translateY(-4px); } 80% { transform: translateY(-2px); } }
