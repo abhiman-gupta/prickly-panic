@@ -2159,7 +2159,16 @@
   // =====================================================================
   const introEl = document.getElementById('intro');
   const titleEl = document.getElementById('title');
-  function closeIntro() { introEl.hidden = true; titleEl.hidden = false; }
+  // The intro closes when the finger lifts (pointerup), but the browser still sends that tap's click a moment later,
+  // at the same spot, to whatever is there by then. On a phone that can be the title card's Instagram or website
+  // link, or the nickname box. So the title card ignores taps until that click has passed.
+  let titleGuard = 0;
+  function closeIntro() {
+    introEl.hidden = true; titleEl.hidden = false;
+    titleEl.style.pointerEvents = 'none';
+    clearTimeout(titleGuard);
+    titleGuard = setTimeout(() => { titleEl.style.pointerEvents = ''; }, 500);
+  }
 
   // intro wren: a little hover flight with the in-game physics feel. It flaps, climbs, glides down
   // and tilts with its speed, sways side to side, flicks its tail on each flap and blinks now and then.
@@ -2555,7 +2564,8 @@
   function closeGuide() { guideEl.hidden = true; }
   $('guideDone').addEventListener('click', closeGuide);
   $('guideClose').addEventListener('click', closeGuide);
-  guideEl.addEventListener('pointerdown', (e) => { if (e.target === guideEl) closeGuide(); });
+  // on click, not pointerdown: closing on touch-down would let the same tap's click land on the card underneath (its links)
+  guideEl.addEventListener('click', (e) => { if (e.target === guideEl) closeGuide(); });
 
   for (const el of installEls) {
     const btn = el.querySelector('.install-btn');
