@@ -283,7 +283,7 @@
     <ul class="how">
       <li><canvas data-icon="wren" width="16" height="16"></canvas><span>Tap, click or press Space to flap</span></li>
       <li><canvas data-icon="cactus" width="16" height="16"></canvas><span>Fly over vegetation, avoid spines</span></li>
-      <li><canvas data-icon="sun" width="16" height="16"></canvas><span>Don't fly too close to the sun</span></li>
+      <li><canvas data-icon="sunmoon" width="16" height="16"></canvas><span>Don't fly too high: hot sun, cold nights</span></li>
       <li><canvas data-icon="pear" width="16" height="16"></canvas><span>Eat prickly pear = 10 SEC invincibility</span></li>
       <li><canvas data-icon="hawk" width="16" height="16"></canvas><span>Dodge the Cooper's hawk</span></li>
     </ul>
@@ -433,6 +433,8 @@
     ['bisbee tombstone', 'Bisbee and Tombstone sit above 4,500 feet, too high and cold for saguaros to grow wild.'],
     ['windmill tombstone', 'Windmills pumped groundwater for cattle across southern Arizona\'s ranch country.'],
     ['monsoon tucson', 'Tucson\'s official monsoon season runs from June 15 to September 30.'],
+    ['cold', 'Dry desert air lets the day\'s warmth escape fast, so Arizona nights can be 30°F cooler than the afternoon.'],
+    ['cold', 'Cactus wrens sleep in their own domed nests all year, tucked out of the wind on cold desert nights.'],
     ['heat', 'Cactus wrens beat the summer heat by foraging in the morning and resting in the shade at midday.'],
     ['ground wren', 'Cactus wrens do much of their foraging on the ground, flipping over leaves and stones to find insects.'],
     ['winter tombstone', 'Southern Arizona\'s higher towns can see snow in winter, even though the desert below stays mild.'],
@@ -881,6 +883,13 @@
     ], WREN_PAL),
     cactus: () => paint(16, 16, (g) => { g.capV(8, 1, 15, 5, '#4b8b52'); g.rect(3, 7, 4, 3, '#4b8b52'); g.capV(4, 3, 9, 3, '#4b8b52'); g.rect(10, 9, 3, 3, '#4b8b52'); g.capV(12, 5, 11, 3, '#4b8b52'); g.rect(7, 2, 1, 12, '#6fae6a'); }),
     sun: () => paint(16, 16, (g) => { g.ell(8, 8, 4.5, 4.5, '#ffb347'); g.ell(7, 7, 2, 2, '#ffe08a'); for (const [x, y] of [[8, 1], [8, 14], [1, 8], [14, 8], [3, 3], [12, 3], [3, 12], [12, 12]]) g.set(x, y, '#ff7a2e'); }, { outline: null }),
+    // the top-of-screen hazard both ways: the sun by day, the moon (cold) by night
+    sunmoon: () => paint(16, 16, (g) => {
+      g.ell(5.5, 5.5, 3.6, 3.6, '#ffb347'); g.ell(5, 5, 1.6, 1.6, '#ffe08a');
+      for (const [x, y] of [[5, 0], [0, 5], [1, 1], [9, 1], [1, 9]]) g.set(x, y, '#ff7a2e');
+      g.ell(11, 11, 4.6, 4.6, '#b8cce8'); g.ell(10.5, 10.5, 3.8, 3.8, '#e8f2ff'); g.ell(10, 10, 2, 2, '#f8fbff');
+      g.set(12, 12, '#b8cce8'); g.set(9, 12, '#c8d8ee');
+    }, { outline: null }),
     pear: () => PEAR_SPR, // the same fruit you grab in game
     bell: () => bitmap([
       '....kk....',
@@ -1048,7 +1057,7 @@
   // =====================================================================
   let state = 'title';      // title | ready | play | dying | over
   let paused = false;
-  let time = 0, dist = 0, tod = 0.42, speed = 0, shake = 0;
+  let time = 0, dist = 0, tod = 0.08, speed = 0, shake = 0;
   let invincible = 0; // seconds of prickly-pear power left
   let score = 0, pearsEaten = 0, heat = 0, spawned = 0, nextGap = 0, hotTick = 0;
   let dyingT = 0, overAt = 0, reason = '', cause = '', deathKind = '';
@@ -1065,10 +1074,11 @@
     windmill: ['Bonk!', 'Flew into a windmill'],
     hawk: ['Caught!', 'A Cooper\'s hawk got you'],
     heat: ['Overheated!', 'Flew too close to the sun'],
+    cold: ['Frozen!', 'Flew too high into the cold night'],
     ground: ['Crash landing!', 'Hit the desert floor'],
   };
   let startStage = 0; // each run starts somewhere random along the journey
-  let stageIdx = 0, regionFrom = 'tucson', regionTo = 'tucson', regionT = 1, seasonT = 1;
+  let stageIdx = 0, regionFrom = 'tucson', regionTo = 'tucson', regionT = 1, seasonT = 1, seasonFrom = 'spring';
   let banner = null;
   let lightning = 0, nextLightning = 4, bolt = null, rainAcc = 0; // rainAcc: the part of a raindrop or snowflake owed since the last tick
   const bird = { x: 120, y: 300, vy: 0, rot: 0, flapT: 1 };
@@ -1077,6 +1087,15 @@
   const stars = Array.from({ length: 110 }, () => ({ x: Math.random(), y: Math.random(), b: Math.random(), p: rand(0, 6.28) }));
   const stage = () => STAGES[stageIdx % STAGES.length];
   const season = () => stage().season;
+  // the top-of-screen hazard: the sun's heat by day, the cold at night and in winter (0 = heat, 1 = cold).
+  // Both sides fade (dusk and dawn, a season change), so the look never flips mid-climb. Only the theme
+  // changes: the meter fills at the same rates either way.
+  function winterness() {
+    if (season() === 'winter') return seasonT;
+    return seasonFrom === 'winter' && seasonT < 1 ? 1 - seasonT : 0;
+  }
+  const nightness = (sky = skyAt(tod)) => { const f = clamp((sky.dark - 0.25) / 0.17, 0, 1); return f * f * (3 - 2 * f); };
+  const coldness = (sky) => Math.max(winterness(), nightness(sky));
 
   function resetRun() {
     score = 0; pearsEaten = 0; invincible = 0; heat = 0; spawned = 0; nextGap = 0; dyingT = 0; hotTick = 0;
@@ -1091,6 +1110,7 @@
 
   function setStage(i, instant) {
     const prevRegion = regionTo;
+    seasonFrom = instant ? STAGES[i % STAGES.length].season : season();
     stageIdx = i;
     const s = stage();
     if (s.region !== prevRegion) { regionFrom = instant ? s.region : prevRegion; regionTo = s.region; regionT = instant ? 1 : 0; }
@@ -1106,6 +1126,7 @@
   function toReady() {
     resetRun();
     state = 'ready';
+    seasonT = 0; // no rain, snow, lightning or storm sky while you wait; it all fades in once you flap
     titleEl.hidden = true; overEl.hidden = true;
     canvas.focus({ preventScroll: true });
   }
@@ -1123,6 +1144,7 @@
   function die(why) {
     if (state !== 'play') return;
     state = 'dying'; deathKind = why; reason = DEATHS[why][0]; cause = DEATHS[why][1]; dyingT = 0; shake = 0.35;
+    if (why === 'cold' && winterness() > nightness()) cause = 'Flew too high into the winter cold';
     bird.vy = why === 'ground' ? 0 : -280;
     for (let i = 0; i < 14; i++) {
       particles.push({ x: bird.x, y: bird.y, vx: rand(-160, 160), vy: rand(-260, 40), life: rand(0.8, 1.4), max: 1.4, kind: 'feather', col: pick(['#8a5a3b', '#f4e7cf', '#5a3520']) });
@@ -1541,7 +1563,7 @@
   function scroll(dt, withObjects) {
     const dx = speed * dt;
     dist += dx;
-    tod = (tod + dx / DAY_LENGTH) % 1;
+    if (state !== 'title') tod = (tod + dx / DAY_LENGTH) % 1; // the launch screen stays in full daylight
     for (const b of bgObjs) b.x -= dx * BG_PAR + (b.walk || 0) * dt;
     bgObjs = bgObjs.filter((b) => b.x + b.hw > 0);
     nextBg -= dx * BG_PAR;
@@ -1602,7 +1624,7 @@
     time += dt;
     shake = Math.max(0, shake - dt);
     regionT = Math.min(1, regionT + dt / 3);
-    if (seasonT < 1) {
+    if (seasonT < 1 && state !== 'ready') { // Tap to fly is calm: the run's weather fades in after the first flap
       const was = seasonT; seasonT = Math.min(1, seasonT + dt / 2);
       if (was < 0.3 && seasonT >= 0.3) seedClouds(true);   // bring in the new season's clouds
       if (seasonT >= 1) seedClouds();                        // old ones have faded; tidy up
@@ -1648,14 +1670,15 @@
     // heat: worse in the muggy monsoon, gentler in winter
     const s = season();
     const heatIn = s === 'winter' ? 0.26 : s === 'monsoon' ? 0.48 : 0.4;
+    const cold = coldness();
     if (bird.y < HEAT_LINE && invincible <= 0) {
       heat += heatIn * dt;
       hotTick -= dt;
       if (hotTick <= 0) { sfx.hot(); hotTick = 0.35; }
-      if (Math.random() < dt * 25) particles.push({ x: bird.x + rand(-8, 8), y: bird.y - 8, vx: rand(-20, 20), vy: rand(-60, -30), life: 0.5, max: 0.5, kind: 'steam' });
+      if (Math.random() < dt * 25) particles.push({ x: bird.x + rand(-8, 8), y: bird.y - 8, vx: rand(-20, 20), vy: rand(-60, -30), life: 0.5, max: 0.5, kind: cold > 0.5 ? 'frost' : 'steam' });
     } else heat -= 0.28 * dt;
     heat = clamp(heat, 0, 1);
-    if (heat >= 1) return die('heat');
+    if (heat >= 1) return die(cold > 0.5 ? 'cold' : 'heat');
     if (bird.y + BR >= GROUND) {
       bird.y = GROUND - BR;
       if (invincible <= 0) return die('ground');
@@ -1964,16 +1987,17 @@
     }
   }
 
-  function drawHeat(c) {
+  function drawHeat(c, cold) {
     const hl = LY(HEAT_LINE);
     const hot = state === 'play' && bird.y < HEAT_LINE;
-    // non-overlapping bands that fade to nothing at the heat line, so there's no hard edge
-    const bands = 8, peak = (hot ? 0.34 : 0.2) * (season() === 'winter' ? 0.6 : 1);
+    // non-overlapping bands that fade to nothing at the heat line, so there's no hard edge.
+    // Orange sun-glare by day; a pale frost haze at night and in winter.
+    const bands = 8, peak = (hot ? 0.34 : 0.2) * lerp(1, 1.25, cold), col = mix('#ff6a1e', '#cfe8ff', cold);
     for (let i = 0; i < bands; i++) {
       const y0 = Math.floor((hl * i) / bands), y1 = Math.floor((hl * (i + 1)) / bands);
       if (y1 <= y0) continue;
       c.globalAlpha = peak * Math.pow(1 - (i + 0.5) / bands, 2);
-      R(c, 0, y0, lo.width, y1 - y0, '#ff6a1e');
+      R(c, 0, y0, lo.width, y1 - y0, col);
     }
     c.globalAlpha = 1;
   }
@@ -1993,6 +2017,7 @@
       if (p.kind === 'feather') R(c, x, y, Math.sin(time * 12 + p.vx) > 0 ? 2 : 1, 1, p.col);
       else if (p.kind === 'wind') { c.globalAlpha = 0.8; R(c, x, y - 5, 1, 6, '#ffffff'); c.globalAlpha = 1; }
       else if (p.kind === 'steam') { if (a > 0.25) R(c, x, y, a > 0.6 ? 1 : 2, a > 0.6 ? 1 : 2, '#ffffff'); }
+      else if (p.kind === 'frost') { if (a > 0.25) { R(c, x, y, 1, 1, '#eaf6ff'); if (a > 0.6) { R(c, x - 1, y, 1, 1, '#a8d4ff'); R(c, x + 1, y, 1, 1, '#a8d4ff'); } } }
       else if (a > 0.2) R(c, x, y, 1, 1, p.col);
     }
   }
@@ -2012,7 +2037,7 @@
     const spr = wrenSprite(frame, rotIdx, body);
     if (state === 'play' && heat > 0.55) {
       c.globalAlpha = clamp((heat - 0.55) * 2.2, 0, 1) * (Math.floor(time * 10) % 2 ? 0.55 : 0.3);
-      disc(c, LX(bird.x), LY(bird.y), 9, '#ff4a1a'); c.globalAlpha = 1;
+      disc(c, LX(bird.x), LY(bird.y), 9, mix('#ff4a1a', '#7cc4ff', coldness())); c.globalAlpha = 1;
     }
     c.drawImage(spr, LX(bird.x) - spr.width / 2, LY(bird.y) - spr.height / 2);
   }
@@ -2047,7 +2072,7 @@
   }
 
   function render() {
-    const sky = skyAt(tod);
+    const sky = skyAt(tod), cold = coldness(sky);
     const shx = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 10) : 0;
     const shy = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 10) : 0;
 
@@ -2076,7 +2101,7 @@
     }
     lctx.drawImage(lofg, 0, 0);
 
-    if (state !== 'title') drawHeat(lctx);
+    if (state !== 'title') drawHeat(lctx, cold);
     // hovering prickly pear fruit: bobbing, with a soft pulsing glow so it reads against any sky
     for (const t of pears) {
       const tx = LX(t.x), ty = LY(t.y + Math.sin(time * 3 + t.p) * 5);
@@ -2115,29 +2140,35 @@
     for (const p of popups) { ctx.globalAlpha = clamp(p.life * 4, 0, 1); ptext(p.text, LX(p.x), LY(p.y), p.mult || 1, p.col || '#ffe08a'); ctx.globalAlpha = 1; }
     if (state === 'ready') {
       ptext('TAP TO FLY!', cols / 2, LY(400), inkBox('TAP TO FLY!', 2).w / N <= cols - 10 ? 2 : 1);
-      ptext('too hot up here', cols / 2, LY(HEAT_LINE - 22), 1, '#ffd2a8');
     }
     if (state === 'play' || state === 'dying') {
+      // stacked top to bottom with a clear 4px between outlines. Caps are 5 font pixels tall, and ptext's
+      // outline adds 1 above and 2 below, so a line of size m centered at y inks y - 2.5m - 1 .. y + 2.5m + 2.
       ptext(String(score), cols / 2, 12, 3);
+      let below = 12 + 7.5 + 2;
       // your best stays in view so every run is a chase; it flips to NEW BEST once you pass it
       const showBest = bestAtStart > 0;
-      if (showBest) ptext(beatBest ? 'NEW BEST' : `BEST ${bestAtStart}`, cols / 2, 25, 1, beatBest ? '#ffd36b' : '#fff2dc');
+      if (showBest) {
+        const y = below + 4 + 1 + 2.5;
+        ptext(beatBest ? 'NEW BEST' : `BEST ${bestAtStart}`, cols / 2, y, 1, beatBest ? '#ffd36b' : '#fff2dc');
+        below = y + 2.5 + 2;
+      }
       if (invincible > 0) {
-        const w = 24, x0 = Math.round(cols / 2 - w / 2), y0 = showBest ? 31 : 22;
+        const w = 24, x0 = Math.round(cols / 2 - w / 2), y0 = Math.ceil(below + 4 + 1); // +1: the bar's dark border
         R(ctx, (x0 - 1) * N, (y0 - 1) * N, (w + 2) * N, 4 * N, '#2a1a10');
         R(ctx, x0 * N, y0 * N, Math.ceil(w * invincible / 10) * N, 2 * N, invincible < 3 && Math.floor(time * 8) % 2 ? '#fff2dc' : '#e0568a');
       }
       // heat meter (bottom left) + where you are (bottom right), centered vertically in the ground strip.
       // The bar is exactly as wide as the inked word HEAT, so the two stay centered on each other.
       const rows = Math.floor(canvas.height / N);
-      const hb = inkBox('HEAT');
+      const meter = cold > 0.5 ? 'COLD' : 'HEAT', hb = inkBox(meter);
       const textW = Math.round(hb.w / N), textH = Math.round(hb.h / N);
       const barW = textW, barH = 4, gap = 3;
       const groupH = textH + gap + barH + 2;
       const stripTop = LY(GROUND) + 2;
       const y0 = stripTop + Math.max(0, Math.round((rows - stripTop - groupH) / 2));
       const bx = 5; // bottom-left corner, mirroring the place name on the right
-      ptextAt('HEAT', bx, y0, 1, '#ffe1c2');
+      ptextAt(meter, bx, y0, 1, cold > 0.5 ? '#dcefff' : '#ffe1c2');
       const by = y0 + textH + gap + 1;
       R(ctx, (bx - 1) * N, (by - 1) * N, (barW + 2) * N, (barH + 2) * N, '#2a1a10');
       R(ctx, bx * N, by * N, barW * N, barH * N, '#4a2e1c');
@@ -2145,7 +2176,8 @@
       const lit = Math.round(cells * heat), flash = heat > 0.75 && Math.floor(time * 10) % 2 === 0;
       for (let i = 0; i < lit; i++) {
         const t = i / cells;
-        R(ctx, (bx + i * 2) * N, by * N, N, barH * N, flash ? '#ffffff' : t < 0.45 ? '#ffd36b' : t < 0.75 ? '#ff8a3d' : '#e8322a');
+        const warm = t < 0.45 ? '#ffd36b' : t < 0.75 ? '#ff8a3d' : '#e8322a', icy = t < 0.45 ? '#bfe4ff' : t < 0.75 ? '#6fb6ff' : '#3a6cf0';
+        R(ctx, (bx + i * 2) * N, by * N, N, barH * N, flash ? '#ffffff' : mix(warm, icy, cold));
       }
       const s = stage();
       const pb = inkBox(s.place.toUpperCase()), lb = inkBox(s.label);
@@ -2668,9 +2700,9 @@
   window.addEventListener('blur', autoPause);
   window.addEventListener('resize', resize);
 
-  // boot
+  // boot: the launch screen is a calm day, so only seasons with no weather (no rain, snow or lightning)
   resize();
-  startStage = randInt(0, STAGES.length - 1);
+  startStage = pick(STAGES.map((st, i) => i).filter((i) => STAGES[i].season !== 'monsoon' && STAGES[i].season !== 'winter'));
   setStage(startStage, true);
   fillBg();
   setMute(muted);
