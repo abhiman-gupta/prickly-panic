@@ -10,6 +10,8 @@
 //   DELETE /push              (auth)                    -> {ok}
 //   GET  /admin/recent        (Bearer ADMIN_TOKEN)      -> latest runs, for spotting cheaters
 //   POST /admin/ban           (Bearer ADMIN_TOKEN) {player, banned}
+//   POST /admin/broadcast     (Bearer ADMIN_TOKEN) {title?, body, url?, tag?}
+//                                                       -> {sent, gone, failed}  one ping to every subscribed device
 //
 // Auth for player calls: headers X-Player (id) and X-Key (HMAC of the id, handed out by /player).
 
@@ -226,6 +228,31 @@ async function admin(req, env, p, m) {
     const b = await readJson(req);
     await env.DB.prepare('UPDATE players SET banned = ? WHERE id = ?').bind(b.banned === false ? 0 : 1, String(b.player)).run();
     return json({ ok: true });
+  }
+  if (m === 'POST' && p === '/admin/broadcast') {
+    // a rare announcement (an update) to everyone with pings on. It doesn't touch notified_at,
+    // so it never holds back a "someone beat you" ping.
+    if (!env.VAPID_PUBLIC || !env.VAPID_PRIVATE_JWK) throw httpErr(500, 'push not configured');
+    const b = await readJson(req);
+    const body = String(b.body || '').trim().slice(0, 240);
+    if (!body) throw httpErr(400, 'body required');
+    const payload = JSON.stringify({
+      title: String(b.title || 'Prickly Panic').slice(0, 60),
+      body,
+      tag: String(b.tag || 'news').slice(0, 32),
+      url: typeof b.url === 'string' && b.url.startsWith('/') ? b.url : '/',
+    });
+    const { results: subs } = await env.DB.prepare('SELECT * FROM push').all();
+    let sent = 0, gone = 0, failed = 0;
+    for (const s of subs) {
+      try {
+        const res = await sendPush(env, { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }, payload);
+        if (res.status === 404 || res.status === 410) { gone++; await env.DB.prepare('DELETE FROM push WHERE player = ?').bind(s.player).run(); }
+        else if (res.ok) sent++;
+        else { failed++; console.warn('broadcast failed', res.status, await res.text()); }
+      } catch (e) { failed++; console.warn('broadcast error', e.message); }
+    }
+    return json({ sent, gone, failed });
   }
   throw httpErr(404, 'not found');
 }
