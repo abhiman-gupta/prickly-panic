@@ -445,11 +445,13 @@
     get(k, d) { try { const v = window[kind].getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { window[kind].setItem(k, JSON.stringify(v)); } catch {} if (onSet) onSet(k); },
   });
-  const CARRIED = ['waa.name', 'waa.best', 'waa.player']; // what an iPhone browser hands on to its Home Screen app (below)
+  const CARRIED = ['waa.name', 'waa.best', 'waa.player', 'waa.names']; // what an iPhone browser hands on to its Home Screen app (below)
   const local = makeStore('localStorage', (k) => { if (CARRIED.includes(k)) saveCarry(); });
   const sess = makeStore('sessionStorage');
   // the leaderboard's own name cleanup (cleanName in api/src/index.js), so a name it would empty out, like "<>", counts as no name here too
   const cleanName = (s) => String(s ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 12);
+  const nameKey = (n) => cleanName(n).toLowerCase(); // "Sam" and "sam" are the same player
+  const okPlayer = (p) => !!p && /^[0-9a-f-]{36}$/.test(p.id) && /^[\w-]{16,128}$/.test(p.key);
 
   // where the game is running: the installed app or a browser tab, which phone, and whether it's the browser inside another app
   const ua = navigator.userAgent;
@@ -467,6 +469,8 @@
   function saveCarry() {
     if (!isIOS || inApp) return;
     const c = [cleanName(local.get('waa.name', local.get('fwf.name', ''))), local.get('waa.best', 0), local.get('waa.player', null)];
+    const all = local.get('waa.names', null); // the device's other nicknames too, while they fit in a cookie
+    if (all && encodeURIComponent(JSON.stringify(all)).length < 2500) c.push(all);
     // Safari keeps a cookie set from script for 7 days at most, so every visit renews it
     try { if (c[0] || c[1] || c[2]) carryCookie(encodeURIComponent(JSON.stringify(c)), 7 * 86400); } catch {}
   }
@@ -475,11 +479,12 @@
     const m = isIOS && inApp && document.cookie.match(/(?:^|;\s*)waa_carry=([^;]+)/);
     if (m) {
       carryCookie('', 0); // read once; the app has no use for sending it with every request
-      const [name, b, p] = JSON.parse(decodeURIComponent(m[1]));
+      const [name, b, p, all] = JSON.parse(decodeURIComponent(m[1]));
       if (local.get('waa.player', null) == null && !local.get('waa.best', 0) && !local.get('waa.name', '')) {
         if (cleanName(name)) local.set('waa.name', cleanName(name));
         if (Number.isInteger(b) && b > 0) local.set('waa.best', b);
-        if (p && /^[0-9a-f-]{36}$/.test(p.id) && /^[\w-]{16,128}$/.test(p.key)) local.set('waa.player', { id: p.id, key: p.key });
+        if (okPlayer(p)) local.set('waa.player', { id: p.id, key: p.key });
+        if (all && typeof all === 'object') local.set('waa.names', all); // checked entry by entry below
         carried = true;
       }
     }
@@ -488,6 +493,30 @@
   let best = local.get('waa.best', 0);
   let muted = local.get('waa.muted', false);
   let playerName = cleanName(local.get('waa.name', local.get('fwf.name', ''))); // no default: the player types one
+
+  // Each nickname on this device is its own player, with its own best and its own spot on the world board, so typing
+  // a second name starts it from 0 instead of handing it the first name's best and renaming the first name's row.
+  // waa.names keeps them all by nickname; waa.best and waa.player hold the current nickname's.
+  const names = {};
+  const rawNames = local.get('waa.names', null);
+  for (const [k, e] of Object.entries(rawNames && typeof rawNames === 'object' ? rawNames : {})) {
+    if (!e || typeof e !== 'object' || k !== nameKey(k)) continue;
+    const n = {};
+    if (Number.isInteger(e.best) && e.best > 0) n.best = e.best;
+    if (okPlayer(e.player)) n.player = { id: e.player.id, key: e.player.key };
+    if (n.best || n.player) names[k] = n;
+  }
+  if (rawNames == null && nameKey(playerName)) { // from before names were kept apart: what this device has is the current name's
+    const p = local.get('waa.player', null);
+    if (best > 0 || okPlayer(p)) names[nameKey(playerName)] = { ...(best > 0 && { best }), ...(okPlayer(p) && { player: p }) };
+  }
+  local.set('waa.names', names);
+  function saveName(n, patch) { // update one nickname's entry
+    const k = nameKey(n); if (!k) return;
+    names[k] = { ...names[k], ...patch };
+    local.set('waa.names', names);
+  }
+  { const e = names[nameKey(playerName)] || {}; best = e.best || 0; local.set('waa.best', best); }
   let runs = sess.get('waa.runs', []);
   let lastRunN = 0;
   let lastFact = -1;
@@ -1108,7 +1137,7 @@
     runs.push({ n: lastRunN, name: playerName, score, cleared: run.cleared, pears: pearsEaten, place: s.place, season: s.label });
     sess.set('waa.runs', runs);
     const isBest = score > best;
-    if (isBest) { best = score; local.set('waa.best', best); }
+    if (isBest) { best = score; local.set('waa.best', best); saveName(playerName, { best }); }
     showOver(isBest);
     submitRun({ score, cleared: run.cleared, close: run.close, name: playerName }).then(showRank);
   }
@@ -2220,8 +2249,10 @@
   if (vv) { vv.addEventListener('resize', fitViewport); vv.addEventListener('scroll', fitViewport); }
   function syncName() { nameInputs.forEach((i) => { if (document.activeElement !== i) i.value = playerName; }); }
   nameInputs.forEach((inp) => inp.addEventListener('input', () => {
+    const was = nameKey(playerName);
     playerName = cleanName(inp.value);
     local.set('waa.name', playerName);
+    if (nameKey(playerName) !== was) useName();
     if (playerName) nameInputs.forEach((i) => { i.classList.remove('need'); $(i.id + 'Need').hidden = true; });
     syncName();
   }));
@@ -2246,35 +2277,67 @@
   // world leaderboard + "someone beat your score" pings (Cloudflare Worker in api/)
   // =====================================================================
   const API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:8787' : 'https://prickly-panic-api.abhi270702.workers.dev';
-  let me = local.get('waa.player', null);   // {id, key}: this device's identity on the board
+  let me = (names[nameKey(playerName)] || {}).player || null; // {id, key}: the current nickname's identity on the board
+  local.set('waa.player', me);
   let runTicket = null, lbTab = 'week';
   const lbCache = {};
-  async function api(method, path, body) {
+  // `who` is the identity to send: the current nickname's unless a caller pins one (a run keeps the one it started with)
+  async function api(method, path, body, who = me) {
     const headers = { 'Content-Type': 'application/json' };
-    if (me) { headers['X-Player'] = me.id; headers['X-Key'] = me.key; }
+    if (who) { headers['X-Player'] = who.id; headers['X-Key'] = who.key; }
     const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 8000);
     try {
       const res = await fetch(API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
       const data = await res.json().catch(() => ({}));
-      if (res.status === 401 && me) { me = null; local.set('waa.player', null); } // identity no longer valid: start fresh next time
+      if (res.status === 401 && who) { // identity no longer valid: that nickname starts fresh on the board next time
+        for (const [k, e] of Object.entries(names)) if (e.player && e.player.id === who.id) { delete e.player; saveName(k, {}); }
+        if (me && me.id === who.id) { me = null; local.set('waa.player', null); }
+      }
       if (!res.ok) throw Object.assign(new Error(data.error || String(res.status)), { status: res.status });
       return data;
     } finally { clearTimeout(t); }
   }
   async function ensurePlayer() {
     if (me && me.id && me.key) return me;
-    const p = await api('POST', '/player', { name: playerName });
-    me = { id: p.id, key: p.key }; local.set('waa.player', me);
-    syncPush(); // a new identity (first run, or the old one stopped working): hand it this device's pings, if they're on
-    return me;
+    const name = playerName; // the nickname could change before the server answers: the identity is still this one's
+    const p = await api('POST', '/player', { name }, null);
+    const who = { id: p.id, key: p.key };
+    saveName(name, { player: who });
+    if (nameKey(name) === nameKey(playerName)) {
+      me = who; local.set('waa.player', me);
+      syncPush(); // a new identity (first run, or the old one stopped working): hand it this device's pings, if they're on
+    }
+    return who;
   }
-  // a run gets a ticket from the server when it starts; the score is only accepted against that ticket
-  function startTicket() { runTicket = ensurePlayer().then(() => api('POST', '/run')).then((r) => r.run).catch(() => null); }
+  // a run gets a ticket from the server when it starts; the score is only accepted against that ticket, sent as the
+  // identity that started the run, even if the nickname was changed on the game-over card meanwhile
+  function startTicket() { runTicket = ensurePlayer().then((who) => api('POST', '/run', null, who).then((r) => ({ who, run: r.run }))).catch(() => null); }
   async function submitRun(snap) {
     const pending = runTicket; runTicket = null; // claim this run's ticket before waiting on it, so a run started meanwhile keeps its own
     const ticket = pending ? await pending : null;
     if (!ticket) return { offline: true };
-    try { return await api('POST', '/score', { run: ticket, ...snap }); } catch { return { offline: true }; }
+    try { return await api('POST', '/score', { run: ticket.run, ...snap }, ticket.who); } catch { return { offline: true }; }
+  }
+  // the nickname changed: switch to that nickname's best and board identity (none yet: it starts from 0)
+  let switchT = 0;
+  function useName() {
+    const e = names[nameKey(playerName)] || {};
+    best = e.best || 0; local.set('waa.best', best);
+    me = e.player || null; local.set('waa.player', me);
+    for (const k of Object.keys(lbCache)) delete lbCache[k]; // which row is "you" changed
+    updateTitleBest();
+    updateNotify();
+    clearTimeout(switchT); // the rest waits until typing stops
+    switchT = setTimeout(() => {
+      titleRank();
+      syncPush();
+      if (!overEl.hidden && lbTab !== 'session') loadBoard(lbTab, true);
+    }, 600);
+  }
+  function titleRank() {
+    const who = me;
+    if (who && best > 0) api('GET', `/board?period=week&limit=1&player=${who.id}`)
+      .then((d) => { if (me === who) updateTitleBest(d.top[0] && d.top[0].me ? 1 : d.me && d.me.rank); }).catch(() => {});
   }
   function showRank(res) {
     if (state !== 'over') return;
@@ -2292,7 +2355,9 @@
     if (lbCache[tab] && !fresh) renderWorld(lbCache[tab]);
     else if (!lbCache[tab]) { $('board').innerHTML = '<li class="gap msg">Loading...</li>'; $('lbNote').textContent = ''; }
     try {
-      const d = await api('GET', `/board?period=${tab}&limit=10${me ? `&player=${me.id}` : ''}`);
+      const who = me;
+      const d = await api('GET', `/board?period=${tab}&limit=10${who ? `&player=${who.id}` : ''}`);
+      if (me !== who) return; // the nickname changed meanwhile: this board marks the wrong row as yours
       lbCache[tab] = d;
       if (lbTab === tab) renderWorld(d);
     } catch {
@@ -2611,7 +2676,7 @@
   setMute(muted);
   syncName();
   updateTitleBest();
-  if (me && best > 0) api('GET', `/board?period=week&limit=1&player=${me.id}`).then((d) => updateTitleBest(d.top[0] && d.top[0].me ? 1 : d.me && d.me.rank)).catch(() => {});
+  titleRank();
   syncPush();
   saveCarry();    // an iPhone or iPad browser renews the cookie that carries the game into a Home Screen app
   updateNotify(); // and an app that just took it over offers pings on the title card
